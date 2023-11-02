@@ -39,8 +39,8 @@ jobs:
             docker pull phongnv96/nestjs-blog:latest
             
             # Stop and remove the existing container (if applicable)
-            docker stop your-container-name || true
-            docker rm your-container-name || true
+            docker stop nestjs-blog || true
+            docker rm nestjs-blog || true
             
             # Run the Docker container with the new image
-            docker run -d -p 80:80 --name your-container-name phongnv96/nestjs-blog:latest
+            docker run -d -p 80:80 --name nestjs-blog phongnv96/nestjs-blog:latest
