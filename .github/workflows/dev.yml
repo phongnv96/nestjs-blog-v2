@@ -36,7 +36,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Pull the Docker image from the private repository
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin docker.io
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} 
             docker pull phongnv96/nestjs-blog:latest
 
             # Stop and remove the existing container (if applicable)
