@@ -76,3 +76,11 @@ export function RequestTimeout(seconds: string): MethodDecorator {
         SetMetadata(REQUEST_CUSTOM_TIMEOUT_VALUE_META_KEY, seconds)
     );
 }
+
+
+export const RequestCookies = createParamDecorator(
+  (data: string, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return data ? request.cookies?.[data] : request.cookies;
+  },
+);

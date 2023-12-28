@@ -66,6 +66,19 @@ export function DocDefault<T>(options: IDocDefaultOptions): MethodDecorator {
         };
     }
 
+    if (options.serializationArray) {
+        docs.push(ApiExtraModels(options.serializationArray));
+        schema.properties = {
+            ...schema.properties,
+            data: {
+                type: 'array',
+                items: {
+                    $ref: getSchemaPath(options.serializationArray),
+                },
+            },
+        };
+    }
+
     return applyDecorators(
         ApiExtraModels(ResponseDefaultSerialization<T>),
         ApiResponse({
@@ -468,6 +481,10 @@ export function DocResponse<T = void>(
 
     if (options?.serialization) {
         docs.serialization = options?.serialization;
+    }
+
+    if (options?.serializationArray) {
+        docs.serializationArray = options?.serializationArray;
     }
 
     return applyDecorators(ApiProduces('application/json'), DocDefault(docs));

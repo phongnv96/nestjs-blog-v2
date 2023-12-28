@@ -83,7 +83,7 @@ export abstract class DatabaseBaseRepositoryAbstract<Entity> {
     abstract createMany<Dto>(
         data: Dto[],
         options?: IDatabaseCreateManyOptions<any>
-    ): Promise<boolean>;
+    ): Promise<any>;
 
     abstract deleteManyByIds(
         _id: string[],

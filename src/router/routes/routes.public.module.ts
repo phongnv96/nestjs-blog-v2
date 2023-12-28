@@ -8,6 +8,10 @@ import { SettingPublicController } from 'src/common/setting/controllers/setting.
 import { UserPublicController } from 'src/modules/user/controllers/user.public.controller';
 import { UserModule } from 'src/modules/user/user.module';
 import { RoleModule } from 'src/modules/role/role.module';
+import { PostModule } from 'src/modules/post/post.module';
+import { AwsModule } from 'src/common/aws/aws.module';
+import { PostPublicController } from 'src/modules/post/controllers/post.public.controller';
+import { CategoryPublicController } from 'src/modules/post/controllers/category.public.controller';
 
 @Module({
     controllers: [
@@ -15,9 +19,19 @@ import { RoleModule } from 'src/modules/role/role.module';
         MessagePublicController,
         SettingPublicController,
         UserPublicController,
+        PostPublicController,
+        CategoryPublicController
     ],
     providers: [],
     exports: [],
-    imports: [TerminusModule, HealthModule, UserModule, AuthModule, RoleModule],
+    imports: [
+        TerminusModule,
+        HealthModule,
+        UserModule,
+        AuthModule,
+        RoleModule,
+        PostModule,
+        AwsModule,
+    ],
 })
 export class RoutesPublicModule {}

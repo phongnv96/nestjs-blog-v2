@@ -442,14 +442,14 @@ export abstract class DatabaseMongoUUIDRepositoryAbstract<
     async createMany<Dto>(
         data: Dto[],
         options?: IDatabaseCreateManyOptions<ClientSession>
-    ): Promise<boolean> {
+    ): Promise<any> {
         const create = this._repository.insertMany(data, {
             session: options ? options.session : undefined,
         });
 
         try {
-            await create;
-            return true;
+            const dataRes = await create;
+            return dataRes.map((item) => item._id);
         } catch (err: unknown) {
             throw err;
         }

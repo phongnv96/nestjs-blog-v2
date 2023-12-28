@@ -92,4 +92,12 @@ export class HelperStringService implements IHelperStringService {
 
         return curr.format(num);
     }
+
+    generateSlug(text: string): string {
+        return text
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, '-');
+    }
 }

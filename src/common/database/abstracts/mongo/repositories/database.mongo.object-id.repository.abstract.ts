@@ -449,7 +449,7 @@ export abstract class DatabaseMongoObjectIdRepositoryAbstract<
     async createMany<Dto>(
         data: Dto[],
         options?: IDatabaseCreateManyOptions<ClientSession>
-    ): Promise<boolean> {
+    ): Promise<any> {
         const dataCreate: Record<string, any>[] = data.map(
             (val: Record<string, any>) => ({
                 ...val,

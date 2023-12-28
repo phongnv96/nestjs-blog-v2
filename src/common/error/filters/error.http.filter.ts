@@ -57,7 +57,7 @@ export class ErrorHttpFilter implements ExceptionFilter {
             request.__timestamp ??
             this.helperDateService.timestamp();
         const __timezone =
-            request.__timezone ??
+            request?.__timezone ??
             Intl.DateTimeFormat().resolvedOptions().timeZone;
         const __version =
             request.__version ??

@@ -19,7 +19,7 @@ export class ApiKeyXApiKeyStrategy extends PassportStrategy(
         private readonly debuggerService: DebuggerService
     ) {
         super(
-            { header: 'X-API-KEY', prefix: '' },
+            { header: 'X-Api-Key', prefix: '' },
             true,
             async (
                 apiKey: string,
