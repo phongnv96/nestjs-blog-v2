@@ -4,6 +4,7 @@ import { AppModule } from 'src/app/app.module';
 import { ConfigService } from '@nestjs/config';
 import { useContainer } from 'class-validator';
 import swaggerInit from './swagger';
+import cookieParser  from 'cookie-parser';
 
 async function bootstrap() {
     const app: NestApplication = await NestFactory.create(AppModule);
@@ -43,6 +44,9 @@ async function bootstrap() {
 
     // Swagger
     await swaggerInit(app);
+
+    // Cookies
+    app.use(cookieParser());
 
     // Listen
     await app.listen(port, host);

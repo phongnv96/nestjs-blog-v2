@@ -200,6 +200,7 @@ export class AwsS3Service implements IAwsS3Service {
             Key: key,
             Body: content,
             ACL: acl,
+            ContentType: options.ContentType || 'application/octet-stream',
         });
 
         try {

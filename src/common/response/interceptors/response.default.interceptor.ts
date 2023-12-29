@@ -79,7 +79,7 @@ export class ResponseDefaultInterceptor<T>
                     const __path = request.path;
                     const __timestamp =
                         request.__xTimestamp ?? request.__timestamp;
-                    const __timezone = request.__timezone;
+                    const __timezone = request?.__timezone;
                     const __version = request.__version;
                     const __repoVersion = request.__repoVersion;
 

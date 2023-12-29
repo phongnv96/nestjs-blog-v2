@@ -83,7 +83,7 @@ export class ResponsePagingInterceptor<T>
                     const __requestId = request.__id;
                     const __timestamp =
                         request.__xTimestamp ?? request.__timestamp;
-                    const __timezone = request.__timezone;
+                    const __timezone = request?.__timezone;
                     const __version = request.__version;
                     const __repoVersion = request.__repoVersion;
                     const __pagination = request.__pagination;

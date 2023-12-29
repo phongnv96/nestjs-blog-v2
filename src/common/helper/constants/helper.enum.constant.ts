@@ -31,3 +31,7 @@ export enum ENUM_HELPER_FILE_TYPE {
     XLS = 'xls',
     CSV = 'csv',
 }
+
+export enum ENUM_TIME_TO_READ {
+    WORD_PER_MINUTE = 200,
+}

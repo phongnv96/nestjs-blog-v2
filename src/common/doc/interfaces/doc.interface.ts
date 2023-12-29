@@ -15,6 +15,7 @@ export interface IDocOfOptions {
     statusCode: number;
     messagePath: string;
     serialization?: ClassConstructor<any>;
+    serializationArray?: ClassConstructor<any>;
 }
 
 export interface IDocDefaultOptions extends IDocOfOptions {
@@ -49,6 +50,7 @@ export interface IDocResponseOptions<T> {
     statusCode?: number;
     httpStatus?: HttpStatus;
     serialization?: ClassConstructor<T>;
+    serializationArray?: ClassConstructor<any>;
 }
 
 export interface IDocResponsePagingOptions<T>

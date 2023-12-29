@@ -11,6 +11,7 @@ import {
     NotFoundException,
     Patch,
     Post,
+    Res,
     UploadedFile,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -73,7 +74,7 @@ import { DatabaseConnection } from 'src/common/database/decorators/database.deco
 import { ENUM_ERROR_STATUS_CODE_ERROR } from 'src/common/error/constants/error.status-code.constant';
 import { FileUploadSingle } from 'src/common/file/decorators/file.decorator';
 import { ApiKeyPublicProtected } from 'src/common/api-key/decorators/api-key.decorator';
-
+import { Response as EResponse } from 'express';
 @ApiTags('modules.auth.user')
 @Controller({
     version: '1',
@@ -95,7 +96,10 @@ export class UserAuthController {
     @ApiKeyPublicProtected()
     @HttpCode(HttpStatus.OK)
     @Post('/login')
-    async login(@Body() { email, password }: UserLoginDto): Promise<IResponse> {
+    async login(
+        @Body() { email, password }: UserLoginDto,
+        @Res({ passthrough: true }) response: EResponse
+    ): Promise<IResponse> {
         const user: UserDoc = await this.userService.findOneByEmail(email);
         if (!user) {
             throw new NotFoundException({
@@ -207,7 +211,6 @@ export class UserAuthController {
                 message: 'user.error.passwordExpired',
             });
         }
-
         return {
             data: {
                 tokenType,

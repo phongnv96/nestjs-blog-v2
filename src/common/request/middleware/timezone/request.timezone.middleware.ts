@@ -9,7 +9,7 @@ export class RequestTimezoneMiddleware implements NestMiddleware {
         res: Response,
         next: NextFunction
     ): Promise<void> {
-        req.__timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        req.__timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'America/New_York';
         next();
     }
 }
