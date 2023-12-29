@@ -4,6 +4,7 @@
 .warmup/
 /.serverless
 /coverage
+/.build
 # Logs
 logs
 *.log

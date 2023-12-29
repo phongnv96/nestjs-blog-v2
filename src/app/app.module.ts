@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
-import { JobsModule } from 'src/jobs/jobs.module';
-import { AppController } from './controllers/app.controller';
-import { RouterModule } from 'src/router/router.module';
 import { CommonModule } from 'src/common/common.module';
+import { JobsModule } from 'src/jobs/jobs.module';
+import { RouterModule } from 'src/router/router.module';
+
+import { Module } from '@nestjs/common';
+
+import { AppController } from './controllers/app.controller';
 
 @Module({
     controllers: [AppController],
