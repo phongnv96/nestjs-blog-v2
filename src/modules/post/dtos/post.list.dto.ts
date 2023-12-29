@@ -3,7 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsObject } from 'class-validator';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { string } from 'yargs';
 import { TranslationCreateDto } from './translation.create.dto';
 import { CategoryCreateDto } from './category.create.dto';
 
@@ -36,7 +35,7 @@ export class PostListDto {
         // example: faker.image.avatar(),
         // required: true,
     })
-    @Type(() => string)
+    @Type(() => String)
     readonly thumbnail: string;
 
     @ApiProperty({

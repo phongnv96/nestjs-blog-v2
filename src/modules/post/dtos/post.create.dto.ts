@@ -3,7 +3,6 @@ import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsObject } from 'class-validator';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { string } from 'yargs';
 import { TranslationDoc } from '../repository/entities/translation.entity';
 
 export class PostCreateDto {
@@ -41,14 +40,14 @@ export class PostCreateDto {
         description: 'thumbnail for small image',
         example: faker.image.avatar(),
     })
-    @Type(() => string)
+    @Type(() => String)
     readonly thumbnail: string;
 
     @ApiProperty({
         description: 'number view of post',
         example: faker.number.int(),
     })
-    @Type(() => string)
+    @Type(() => String)
     readonly view?: string;
 
     @ApiProperty({

@@ -2,7 +2,8 @@
 /dist
 /node_modules
 .warmup/
-
+/.serverless
+/coverage
 # Logs
 logs
 *.log
