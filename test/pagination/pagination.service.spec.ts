@@ -14,11 +14,11 @@ describe('PaginationService', () => {
     });
 
     describe('offset', () => {
-        it('should offset the given page and perPage', () => {
+        it('should offset the given page.tsx and perPage', () => {
             expect(service.offset(1, 10)).toBe(0);
         });
 
-        it('should limit the page to the maximum allowed value', () => {
+        it('should limit the page.tsx to the maximum allowed value', () => {
             expect(service.offset(1000, 10)).toBe(190);
         });
 
@@ -42,31 +42,31 @@ describe('PaginationService', () => {
     });
 
     describe('offsetWithoutMax', () => {
-        it('should return the offset without the maximum page limit', () => {
+        it('should return the offset without the maximum page.tsx limit', () => {
             expect(service.offsetWithoutMax(1, 10)).toBe(0);
         });
     });
 
     describe('totalPageWithoutMax', () => {
-        it('should calculate the total number of pages without the maximum page limit for 0 data', () => {
+        it('should calculate the total number of pages without the maximum page.tsx limit for 0 data', () => {
             expect(service.totalPageWithoutMax(0, 10)).toBe(1);
         });
 
-        it('should calculate the total number of pages without the maximum page limit', () => {
+        it('should calculate the total number of pages without the maximum page.tsx limit', () => {
             expect(service.totalPageWithoutMax(100, 10)).toBe(10);
         });
     });
 
     describe('page', () => {
-        it('should return the default page value if no page parameter is provided', () => {
+        it('should return the default page.tsx value if no page.tsx parameter is provided', () => {
             expect(service.page()).toBe(1);
         });
 
-        it('should return the page 3 value', () => {
+        it('should return the page.tsx 3 value', () => {
             expect(service.page(3)).toBe(3);
         });
 
-        it('should limit the page to the maximum allowed value if a page parameter is provided', () => {
+        it('should limit the page.tsx to the maximum allowed value if a page.tsx parameter is provided', () => {
             expect(service.page(1000)).toBe(20);
         });
     });

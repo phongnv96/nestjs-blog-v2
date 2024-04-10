@@ -66,6 +66,7 @@ export class HelperEncryptionService implements IHelperEncryptionService {
             audience: options.audience,
             issuer: options.issuer,
             subject: options.subject,
+            algorithm: 'HS256',
         });
     }
 

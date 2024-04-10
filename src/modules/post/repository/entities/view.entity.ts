@@ -5,7 +5,7 @@ import { DatabaseEntity } from 'src/common/database/decorators/database.decorato
 import { PostEntity } from './post.entity';
 import { UserEntity } from 'src/modules/user/repository/entities/user.entity';
 
-export const ViewDatabaseName = 'Views';
+export const ViewDatabaseName = 'views';
 
 @DatabaseEntity({ collection: ViewDatabaseName })
 export class ViewEntity extends DatabaseMongoUUIDEntityAbstract {

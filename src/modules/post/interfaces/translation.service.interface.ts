@@ -9,7 +9,10 @@ import {
     IDatabaseSaveOptions,
 } from 'src/common/database/interfaces/database.interface';
 import { TranslationCreateDto } from '../dtos/translation.create.dto';
-import { TranslationDoc, TranslationEntity } from '../repository/entities/translation.entity';
+import {
+    TranslationDoc,
+    TranslationEntity,
+} from '../repository/entities/translation.entity';
 
 export interface ITranslationService {
     findAll(
@@ -41,7 +44,7 @@ export interface ITranslationService {
         options?: IDatabaseCreateOptions
     ): Promise<TranslationDoc>;
     update(
-        id: string,
+        repository: TranslationDoc,
         data: TranslationCreateDto,
         options?: IDatabaseSaveOptions
     ): Promise<TranslationDoc>;

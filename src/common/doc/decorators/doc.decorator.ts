@@ -524,7 +524,7 @@ export function DocResponsePaging<T = void>(
             allowEmptyValue: true,
             example: 20,
             type: 'number',
-            description: 'Data per page, max 100',
+            description: 'Data per page.tsx, max 100',
         }),
         ApiQuery({
             name: 'page',
@@ -532,7 +532,7 @@ export function DocResponsePaging<T = void>(
             allowEmptyValue: true,
             example: 1,
             type: 'number',
-            description: 'page number, max 20',
+            description: 'page.tsx number, max 20',
         }),
         ApiQuery({
             name: 'orderBy',

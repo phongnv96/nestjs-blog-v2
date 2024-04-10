@@ -25,6 +25,17 @@ export class PostEntity extends DatabaseMongoUUIDEntityAbstract {
     @Prop({ type: [String] })
     tags: string[];
 
+    @Prop({
+        required: false,
+        type: [{
+        author: String,
+        clap: Number,
+        }] })
+    claps: {
+        author: string;
+        clap: number;
+    }[];
+
     @Prop()
     thumbnail: string;
 

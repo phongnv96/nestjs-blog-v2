@@ -1,6 +1,7 @@
-import { registerAs } from '@nestjs/config';
 import { version } from 'package.json';
 import { ENUM_APP_ENVIRONMENT } from 'src/app/constants/app.enum.constant';
+
+import { registerAs } from '@nestjs/config';
 
 export default registerAs(
     'app',

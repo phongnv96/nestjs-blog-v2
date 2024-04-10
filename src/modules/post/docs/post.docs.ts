@@ -8,6 +8,7 @@ import { FileSingleDto } from "src/common/file/dtos/file.single.dto";
 import { PostDocParamsId } from "../constants/post.doc.contant";
 import { PostGetSerialization } from "../serializations/post.get.serializations";
 import { PostGetHomeHeaderSerialization } from "../serializations/post.get.home.header.serializations";
+import { PostClapDto } from '../dtos/post.clap.dto';
 
 export function PostListDoc(): MethodDecorator {
     return applyDecorators(
@@ -15,7 +16,31 @@ export function PostListDoc(): MethodDecorator {
             summary: 'get all of posts',
         }),
         DocRequest({
-            queries: [],
+            queries: [{
+                name: "slug",
+            }],
+        }),
+        DocAuth({
+            apiKey: true,
+            jwtAccessToken: true,
+        }),
+        DocGuard({ role: true, policy: true }),
+        DocResponsePaging<PostListSerialization>('post.list', {
+            serialization: PostListSerialization,
+        })
+    );
+}
+
+export function PostListTagsDoc(): MethodDecorator {
+    return applyDecorators(
+        Doc({
+            summary: 'get all of posts by tags',
+        }),
+        DocRequest({
+            queries: [{
+                name: "tags",
+                isArray: true,
+            }],
         }),
         DocAuth({
             apiKey: true,
@@ -93,6 +118,47 @@ export function PostGetHomeHeaderDoc(): MethodDecorator {
         }),
         DocResponse<PostGetHomeHeaderSerialization>('pose.get-home-header', {
             serialization: PostGetHomeHeaderSerialization,
+        })
+    );
+}
+
+export function PostAdminClapDoc(): MethodDecorator {
+    return applyDecorators(
+        Doc({
+            summary: 'clap a post',
+        }),
+        DocAuth({
+            apiKey: true,
+            jwtAccessToken: true,
+        }),
+        DocRequest({
+            bodyType: ENUM_DOC_REQUEST_BODY_TYPE.JSON,
+            body: PostClapDto,
+        }),
+        DocGuard({ role: true, policy: true }),
+        DocResponse<ResponseIdSerialization>('post.clap', {
+            httpStatus: HttpStatus.OK,
+            serialization: ResponseIdSerialization,
+        })
+    );
+}
+
+export function GCPUploadFile(): MethodDecorator {
+    return applyDecorators(
+        Doc({
+            summary: 'get detail an post',
+        }),
+        DocRequest(
+            {
+                bodyType: ENUM_DOC_REQUEST_BODY_TYPE.FORM_DATA,
+                body: FileSingleDto,
+            }
+        ),
+        DocAuth({
+            apiKey: true,
+        }),
+        DocResponse<any>('gcp.upload-file', {
+            serialization: String,
         })
     );
 }

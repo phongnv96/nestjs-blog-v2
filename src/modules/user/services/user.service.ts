@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+    ForbiddenException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { IUserService } from 'src/modules/user/interfaces/user.service.interface';
 import {
     IDatabaseCreateOptions,
@@ -32,6 +36,10 @@ import { RoleEntity } from 'src/modules/role/repository/entities/role.entity';
 import { UserImportDto } from 'src/modules/user/dtos/user.import.dto';
 import { UserUpdateUsernameDto } from 'src/modules/user/dtos/user.update-username.dto';
 import { UserUpdateGoogleSSODto } from '../dtos/user.update-google-sso.dto';
+import { ENUM_USER_STATUS_CODE_ERROR } from '../constants/user.status-code.constant';
+import { ENUM_ROLE_STATUS_CODE_ERROR } from '../../role/constants/role.status-code.constant';
+import { UserUpdateGithubSSODto } from '../dtos/user.update-gitgub-sso.dto';
+import { UserUpdateFacebookSSODto } from '../dtos/user.update-facebook-sso.dto';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -42,17 +50,17 @@ export class UserService implements IUserService {
         private readonly userRepository: UserRepository,
         private readonly helperDateService: HelperDateService,
         private readonly helperStringService: HelperStringService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
     ) {
         this.uploadPath = this.configService.get<string>('user.uploadPath');
         this.authMaxPasswordAttempt = this.configService.get<number>(
-            'auth.password.maxAttempt'
+            'auth.password.maxAttempt',
         );
     }
 
     async findAll(
         find?: Record<string, any>,
-        options?: IDatabaseFindAllOptions
+        options?: IDatabaseFindAllOptions,
     ): Promise<IUserEntity[]> {
         return this.userRepository.findAll<IUserEntity>(find, {
             ...options,
@@ -62,42 +70,42 @@ export class UserService implements IUserService {
 
     async findOneById<T>(
         _id: string,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<T> {
         return this.userRepository.findOneById<T>(_id, options);
     }
 
     async findOne<T>(
         find: Record<string, any>,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<T> {
         return this.userRepository.findOne<T>(find, options);
     }
 
     async findOneByUsername<T>(
         username: string,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<T> {
         return this.userRepository.findOne<T>({ username }, options);
     }
 
     async findOneByEmail<T>(
         email: string,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<T> {
         return this.userRepository.findOne<T>({ email }, options);
     }
 
     async findOneByMobileNumber<T>(
         mobileNumber: string,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<T> {
         return this.userRepository.findOne<T>({ mobileNumber }, options);
     }
 
     async getTotal(
         find?: Record<string, any>,
-        options?: IDatabaseGetTotalOptions
+        options?: IDatabaseGetTotalOptions,
     ): Promise<number> {
         return this.userRepository.getTotal(find, { ...options, join: true });
     }
@@ -110,9 +118,11 @@ export class UserService implements IUserService {
             mobileNumber,
             role,
             signUpFrom,
+            photo,
+            isWaitingConfirmActivation,
         }: UserCreateDto,
         { passwordExpired, passwordHash, salt, passwordCreated }: IAuthPassword,
-        options?: IDatabaseCreateOptions
+        options?: IDatabaseCreateOptions,
     ): Promise<UserDoc> {
         const create: UserEntity = new UserEntity();
         create.firstName = firstName;
@@ -130,50 +140,53 @@ export class UserService implements IUserService {
         create.passwordAttempt = 0;
         create.mobileNumber = mobileNumber ?? undefined;
         create.signUpFrom = signUpFrom;
+        create.photo = photo;
+        create.isWaitingConfirmActivation = isWaitingConfirmActivation;
 
         return this.userRepository.create<UserEntity>(create, options);
     }
 
     async existByEmail(
         email: string,
-        options?: IDatabaseExistOptions
+        options?: IDatabaseExistOptions,
     ): Promise<boolean> {
         return this.userRepository.exists(
             {
-                email: {
-                    $regex: new RegExp(`\\b${email}\\b`),
-                    $options: 'i',
-                },
+                // email: {
+                //     $regex: new RegExp(`\\b${email}\\b`),
+                //     $options: 'i',
+                // },
+                email,
             },
-            { ...options, withDeleted: true }
+            { ...options, withDeleted: true },
         );
     }
 
     async existByMobileNumber(
         mobileNumber: string,
-        options?: IDatabaseExistOptions
+        options?: IDatabaseExistOptions,
     ): Promise<boolean> {
         return this.userRepository.exists(
             {
                 mobileNumber,
             },
-            { ...options, withDeleted: true }
+            { ...options, withDeleted: true },
         );
     }
 
     async existByUsername(
         username: string,
-        options?: IDatabaseExistOptions
+        options?: IDatabaseExistOptions,
     ): Promise<boolean> {
         return this.userRepository.exists(
             { username },
-            { ...options, withDeleted: true }
+            { ...options, withDeleted: true },
         );
     }
 
     async delete(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         return this.userRepository.softDelete(repository, options);
     }
@@ -181,7 +194,7 @@ export class UserService implements IUserService {
     async updateName(
         repository: UserDoc,
         { firstName, lastName }: UserUpdateNameDto,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.firstName = firstName;
         repository.lastName = lastName;
@@ -192,7 +205,7 @@ export class UserService implements IUserService {
     async updateUsername(
         repository: UserDoc,
         { username }: UserUpdateUsernameDto,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.username = username;
 
@@ -202,7 +215,7 @@ export class UserService implements IUserService {
     async updatePhoto(
         repository: UserDoc,
         photo: AwsS3Serialization,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.photo = photo;
 
@@ -212,7 +225,7 @@ export class UserService implements IUserService {
     async updatePassword(
         repository: UserDoc,
         { passwordHash, passwordExpired, salt, passwordCreated }: IAuthPassword,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.password = passwordHash;
         repository.passwordExpired = passwordExpired;
@@ -222,9 +235,18 @@ export class UserService implements IUserService {
         return this.userRepository.save(repository, options);
     }
 
+    async updateVerifyToken(
+        repository: UserDoc,
+        options?: IDatabaseSaveOptions,
+    ): Promise<UserDoc> {
+        repository.isWaitingConfirmActivation = false;
+        return this.userRepository.save(repository, options);
+    }
+
+
     async active(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserEntity> {
         repository.isActive = true;
         repository.inactiveDate = undefined;
@@ -234,7 +256,7 @@ export class UserService implements IUserService {
 
     async inactive(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.isActive = false;
         repository.inactiveDate = this.helperDateService.create();
@@ -244,7 +266,7 @@ export class UserService implements IUserService {
 
     async inactivePermanent(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.isActive = false;
         repository.inactivePermanent = true;
@@ -255,7 +277,7 @@ export class UserService implements IUserService {
 
     async blocked(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.blocked = true;
         repository.blockedDate = this.helperDateService.create();
@@ -265,7 +287,7 @@ export class UserService implements IUserService {
 
     async unblocked(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.blocked = false;
         repository.blockedDate = undefined;
@@ -275,7 +297,7 @@ export class UserService implements IUserService {
 
     async maxPasswordAttempt(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.passwordAttempt = this.authMaxPasswordAttempt;
 
@@ -284,7 +306,7 @@ export class UserService implements IUserService {
 
     async increasePasswordAttempt(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.passwordAttempt = ++repository.passwordAttempt;
 
@@ -293,7 +315,7 @@ export class UserService implements IUserService {
 
     async resetPasswordAttempt(
         repository: UserDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.passwordAttempt = 0;
 
@@ -303,7 +325,7 @@ export class UserService implements IUserService {
     async updatePasswordExpired(
         repository: UserDoc,
         passwordExpired: Date,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.passwordExpired = passwordExpired;
 
@@ -329,7 +351,7 @@ export class UserService implements IUserService {
     }
 
     async payloadSerialization(
-        data: IUserDoc
+        data: IUserDoc,
     ): Promise<UserPayloadSerialization> {
         return plainToInstance(UserPayloadSerialization, data.toObject());
     }
@@ -338,7 +360,7 @@ export class UserService implements IUserService {
         data: UserImportDto[],
         role: string,
         { passwordCreated, passwordHash, salt }: IAuthPassword,
-        options?: IDatabaseCreateManyOptions
+        options?: IDatabaseCreateManyOptions,
     ): Promise<boolean> {
         const passwordExpired: Date = this.helperDateService.backwardInDays(1);
         const users: UserEntity[] = data.map(
@@ -361,7 +383,7 @@ export class UserService implements IUserService {
                 create.signUpFrom = signUpFrom;
 
                 return create;
-            }
+            },
         );
 
         return this.userRepository.createMany<UserEntity>(users, options);
@@ -369,7 +391,7 @@ export class UserService implements IUserService {
 
     async deleteMany(
         find: Record<string, any>,
-        options?: IDatabaseManyOptions
+        options?: IDatabaseManyOptions,
     ): Promise<boolean> {
         return this.userRepository.deleteMany(find, options);
     }
@@ -377,7 +399,7 @@ export class UserService implements IUserService {
     async updateGoogleSSO(
         repository: UserDoc,
         { accessToken, refreshToken }: UserUpdateGoogleSSODto,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<UserDoc> {
         repository.google = {
             accessToken,
@@ -387,5 +409,66 @@ export class UserService implements IUserService {
         return this.userRepository.save(repository, options);
     }
 
+    async updateGithubSSO(
+        repository: UserDoc,
+        { accessToken, refreshToken }: UserUpdateGithubSSODto,
+        options?: IDatabaseSaveOptions,
+    ): Promise<UserDoc> {
+        repository.github = {
+            accessToken,
+            refreshToken,
+        };
 
+        return this.userRepository.save(repository, options);
+    }
+
+    async updateFacebookSSO(
+        repository: UserDoc,
+        { accessToken, refreshToken }: UserUpdateFacebookSSODto,
+        options?: IDatabaseSaveOptions,
+    ): Promise<UserDoc> {
+        repository.facebook = {
+            accessToken,
+            refreshToken,
+        };
+
+        return this.userRepository.save(repository, options);
+    }
+
+
+    async checkExistUserByEmailAddress(email: string): Promise<any> {
+        const user: UserDoc = await this.findOneByEmail(email);
+
+        if (!user) {
+            throw new NotFoundException({
+                statusCode: ENUM_USER_STATUS_CODE_ERROR.USER_NOT_FOUND_ERROR,
+                message: 'user.error.notFound',
+            });
+        } else if (user.blocked) {
+            throw new ForbiddenException({
+                statusCode: ENUM_USER_STATUS_CODE_ERROR.USER_BLOCKED_ERROR,
+                message: 'user.error.blocked',
+            });
+        } else if (user.inactivePermanent) {
+            throw new ForbiddenException({
+                statusCode:
+                ENUM_USER_STATUS_CODE_ERROR.USER_INACTIVE_PERMANENT_ERROR,
+                message: 'user.error.inactivePermanent',
+            });
+        } else if (!user.isActive) {
+            throw new ForbiddenException({
+                statusCode: ENUM_USER_STATUS_CODE_ERROR.USER_INACTIVE_ERROR,
+                message: 'user.error.inactive',
+            });
+        }
+
+        const userWithRole: IUserDoc = await this.joinWithRole(user);
+        if (!userWithRole.role.isActive) {
+            throw new ForbiddenException({
+                statusCode: ENUM_ROLE_STATUS_CODE_ERROR.ROLE_INACTIVE_ERROR,
+                message: 'role.error.inactive',
+            });
+        }
+        return { user, userWithRole };
+    }
 }

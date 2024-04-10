@@ -18,6 +18,7 @@ import {
 import { ITranslationService } from '../interfaces/translation.service.interface';
 import { TranslationCreateDto } from '../dtos/translation.create.dto';
 import { TranslationRepository } from '../repository/repositories/translation.repository';
+import { PostDoc } from '../repository/entities/post.entity';
 
 @Injectable()
 export class TranslationService implements ITranslationService {
@@ -107,18 +108,18 @@ export class TranslationService implements ITranslationService {
     }
 
     async update(
-        id: string,
+        repository: TranslationDoc,
         { description, title, language, content }: TranslationCreateDto,
         options?: IDatabaseSaveOptions
     ): Promise<TranslationDoc> {
-        const translationUpdate =
-            await this.TranslationRepository.findOneById(id);
-        translationUpdate.description = description;
-        (translationUpdate.title = title),
-            (translationUpdate.language = language),
-            (translationUpdate.content = content);
+        if (repository) {
+            repository.description = description;
+            (repository.title = title),
+                (repository.language = language),
+                (repository.content = content);
 
-        return this.TranslationRepository.save(translationUpdate, options);
+            return this.TranslationRepository.save(repository, options);
+        }
     }
 
     async delete(

@@ -4,11 +4,16 @@
   "compilerOptions": {
     "plugins": [
       "@nestjs/swagger"
-  ],
+    ],
     "assets": [
-      { 
-        "include": "languages/**/*", 
-        "outDir": "dist/src" 
+      {
+        "include": "languages/**/*",
+        "outDir": "dist/src"
+      },
+      {
+        "include": "common/mail/templates/**/*",
+        "outDir": "dist/src",
+        "watchAssets": true
       }
     ],
     "webpack": false,

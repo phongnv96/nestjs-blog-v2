@@ -1,18 +1,28 @@
+import { writeFileSync } from 'fs';
+import { ENUM_APP_ENVIRONMENT } from 'src/app/constants/app.enum.constant';
+import {
+  AwsS3MultipartPartsSerialization,
+  AwsS3MultipartSerialization,
+} from 'src/common/aws/serializations/aws.s3-multipart.serialization';
+import {
+  AwsS3Serialization,
+} from 'src/common/aws/serializations/aws.s3.serialization';
+import {
+  ResponseDefaultSerialization,
+} from 'src/common/response/serializations/response.default.serialization';
+import {
+  ResponsePagingSerialization,
+} from 'src/common/response/serializations/response.paging.serialization';
+
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestApplication } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ENUM_APP_ENVIRONMENT } from 'src/app/constants/app.enum.constant';
 import {
-    AwsS3MultipartPartsSerialization,
-    AwsS3MultipartSerialization,
-} from 'src/common/aws/serializations/aws.s3-multipart.serialization';
-import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { ResponseDefaultSerialization } from 'src/common/response/serializations/response.default.serialization';
-import { ResponsePagingSerialization } from 'src/common/response/serializations/response.paging.serialization';
-import { writeFileSync } from 'fs';
+  DocumentBuilder,
+  SwaggerModule,
+} from '@nestjs/swagger';
 
-export default async function (app: NestApplication) {
+export default async function (app: NestApplication, isServerless?: boolean) {
     const configService = app.get(ConfigService);
     const env: string = configService.get<string>('app.env');
     const logger = new Logger();
@@ -24,10 +34,11 @@ export default async function (app: NestApplication) {
 
     if (env !== ENUM_APP_ENVIRONMENT.PRODUCTION) {
         const documentBuild = new DocumentBuilder()
+            // .setBasePath('/dev')
             .setTitle(docName)
             .setDescription(docDesc)
             .setVersion(docVersion)
-            .addServer('/')
+            .addServer( isServerless? '/dev' : '/')
             .addBearerAuth(
                 { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
                 'accessToken'
@@ -57,7 +68,7 @@ export default async function (app: NestApplication) {
             ],
         });
 
-        writeFileSync('./data/swagger.json', JSON.stringify(document));
+        writeFileSync( isServerless ? '/tmp/swagger.json' : './data/swagger.json', JSON.stringify(document));
         SwaggerModule.setup(docPrefix, app, document, {
             jsonDocumentUrl: `${docPrefix}/json`,
             yamlDocumentUrl: `${docPrefix}/yaml`,

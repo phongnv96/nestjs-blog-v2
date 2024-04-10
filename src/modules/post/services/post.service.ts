@@ -27,125 +27,42 @@ import { PostGetHomeDto } from '../dtos/post.home.dto';
 @Injectable()
 export class PostService implements IPostService {
     private readonly uploadPath: string;
+
     constructor(
         private readonly postRepository: PostRepository,
         private readonly helperStringService: HelperStringService,
         private readonly configService: ConfigService,
         private readonly translationService: TranslationService,
         private readonly viewHistory: ViewService,
-        private readonly categoryService: CategoryService
+        private readonly categoryService: CategoryService,
     ) {
         this.uploadPath = this.configService.get<string>('post.uploadPath');
     }
 
     async increasingView(id: string, view: ViewCreateDto): Promise<any> {
-        const post = await this.postRepository.findOneById(id);
+        const post = await this.postRepository.findOne({ _id: id });
         post.views += 1;
-        this.postRepository.save(post);
+        await this.postRepository.save(post);
         await this.viewHistory.create(view);
     }
 
     async findAll<T>(
         find?: Record<string, any>,
-        options?: IDatabaseFindAllOptions
+        options?: IDatabaseFindAllOptions,
     ): Promise<T[]> {
         return this.postRepository.findAll<T>(find, options);
     }
 
     async findOneById(
         _id: string,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<PostDoc> {
-        // const data = (await this.postRepository.raw(
-        //     [
-        //         {
-        //             $match: {
-        //                 _id: _id,
-        //             },
-        //         },
-        //         {
-        //             $lookup: {
-        //                 from: 'Categories',
-        //                 localField: 'categories',
-        //                 foreignField: '_id',
-        //                 as: 'categories',
-        //             },
-        //         },
-        //         {
-        //             $graphLookup: {
-        //                 from: 'Categories',
-        //                 startWith: '$categories._id',
-        //                 connectFromField: '_id',
-        //                 connectToField: 'parentId',
-        //                 as: 'categories.tree',
-        //                 maxDepth: 10, // Set the maximum depth of the tree as needed
-        //                 depthField: 'children',
-        //             },
-        //         },
-        //         {
-        //             $lookup: {
-        //                 from: 'translations',
-        //                 localField: 'translations',
-        //                 foreignField: '_id',
-        //                 as: 'translations',
-        //             },
-        //         },
-        //         {
-        //             $lookup: {
-        //                 from: 'users',
-        //                 localField: 'author',
-        //                 foreignField: '_id',
-        //                 as: 'author',
-        //             },
-        //         },
-        //         {
-        //             $unwind: {
-        //                 path: '$author',
-        //                 preserveNullAndEmptyArrays: true,
-        //             },
-        //         },
-        //         {
-        //             $unwind: {
-        //                 path: '$translations',
-        //                 preserveNullAndEmptyArrays: true,
-        //             },
-        //         },
-        //         {
-        //             $match: {
-        //                 'translations.language': 'en', // Replace 'en' with your desired language code
-        //             },
-        //         },
-        //         {
-        //             $addFields: {
-        //                 categories: '$categories.tree',
-        //             },
-        //         },
-        //         {
-        //             $project: {
-        //                 photo: 1,
-        //                 views: 1,
-        //                 tags: 1,
-        //                 thumbnail: 1,
-        //                 'author.firstName': 1,
-        //                 'author.lastName': 1,
-        //                 translations: 1,
-        //                 categories: 1
-        //             },
-        //         },
-        //         {
-        //             $unset: 'categories.tree',
-        //         },
-        //     ],
-        //     options
-        // )) as unknown as PostDoc[];
-
-        // console.log('data detail: ', data);
-        return await this.postRepository.findOneById<PostDoc>(_id, options);
+        return this.postRepository.findOneById<PostDoc>(_id, options);
     }
 
     async findOne(
         find: Record<string, any>,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<PostGetDto> {
         const dataPost: any = (
             await this.postRepository.findOne<PostDoc>(find, options)
@@ -170,27 +87,27 @@ export class PostService implements IPostService {
 
     async findOneByName(
         name: string,
-        options?: IDatabaseFindOneOptions
+        options?: IDatabaseFindOneOptions,
     ): Promise<PostDoc> {
         return this.postRepository.findOne<PostDoc>({ name }, options);
     }
 
     async getTotal(
         find?: Record<string, any>,
-        options?: IDatabaseGetTotalOptions
+        options?: IDatabaseGetTotalOptions,
     ): Promise<number> {
         return this.postRepository.getTotal(find, options);
     }
 
     async existByTitle(
         titles: string[],
-        options?: IDatabaseExistOptions
+        options?: IDatabaseExistOptions,
     ): Promise<boolean> {
         return this.postRepository.exists(
             {
                 'translations.title': { $in: titles },
             },
-            { ...options, withDeleted: true }
+            { ...options, withDeleted: true },
         );
     }
 
@@ -203,10 +120,11 @@ export class PostService implements IPostService {
             author,
             categories,
         }: PostCreateDto,
-        options?: IDatabaseCreateOptions
+        options?: IDatabaseCreateOptions,
     ): Promise<PostDoc> {
-        const translationsId: any =
-            await this.translationService.createMany(translations);
+        const translationsId: any = await this.translationService.createMany(
+            translations,
+        );
         const create: PostEntity = new PostEntity();
         create.tags = tags;
         create.thumbnail = thumbnail;
@@ -220,39 +138,52 @@ export class PostService implements IPostService {
     async update(
         repository: PostDoc,
         postUpdate: PostUpdateDto,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<PostDoc> {
-        const { author, tags, translations, photo, thumbnail } = postUpdate;
+        const { author, tags, translations, photo, thumbnail, categories, claps } =
+            postUpdate;
         (repository.author = author),
             (repository.tags = tags),
             (repository.photo = photo),
             (repository.thumbnail = thumbnail),
-            translations.forEach(async (translation) => {
-                await this.translationService.update(
-                    translation._id,
-                    translation
-                );
+            (repository.categories = categories),
+            (repository.claps = claps);
+        for (const translation of translations) {
+            const translationDoc = await this.translationService.findOne({
+                _id: translation._id,
             });
+            if (translationDoc) {
+                await this.translationService.update(
+                    translationDoc,
+                    translation,
+                );
+            } else {
+                // const newTrans = await this.translationService.create(
+                //     translation
+                // );
+                // repository.translations.push(newTrans._id);
+            }
+        }
         return this.postRepository.save(repository, options);
     }
 
     async delete(
         repository: PostDoc,
-        options?: IDatabaseSaveOptions
+        options?: IDatabaseSaveOptions,
     ): Promise<PostDoc> {
         return this.postRepository.delete(repository, options);
     }
 
     async deleteMany(
         find: Record<string, any>,
-        options?: IDatabaseManyOptions
+        options?: IDatabaseManyOptions,
     ): Promise<boolean> {
         return this.postRepository.deleteMany(find, options);
     }
 
     async createMany(
         data: PostCreateDto[],
-        options?: IDatabaseCreateManyOptions
+        options?: IDatabaseCreateManyOptions,
     ): Promise<boolean> {
         const create: PostEntity[] = data.map(({ tags, thumbnail, photo }) => {
             const entity: PostEntity = new PostEntity();
@@ -274,9 +205,7 @@ export class PostService implements IPostService {
         };
     }
 
-    async getHomeHeaderPost(
-        lang: string
-    ): Promise<PostGetHomeDto> {
+    async getHomeHeaderPost(lang: string): Promise<PostGetHomeDto> {
         const queryPost: IDatabaseFindAllOptions = {
             paging: {
                 limit: 3,
@@ -296,14 +225,14 @@ export class PostService implements IPostService {
         const startOfMonth = new Date(
             currentDate.getFullYear(),
             currentDate.getMonth(),
-            1
+            1,
         );
 
         const findFofM = { createdAt: { $gte: startOfMonth } };
 
         const featuredOfMonth = await this.postRepository.findAll(
             findFofM,
-            queryPost
+            queryPost,
         );
 
         const findPopularPost = {
@@ -312,30 +241,37 @@ export class PostService implements IPostService {
 
         const popularPost = await this.postRepository.findAll(
             findPopularPost,
-            queryPost
+            queryPost,
         );
 
-        const tags = (await this.postRepository.raw([
-            { $unwind: '$tags' },                         // Deconstructs the tags array
-            {
-                $addFields: {
-                    normalizedTag: { $trim: { input: { $toLower: '$tags' } } }
-                }
-            },                                            // Normalize tags
-            { $group: {                                   // Groups the documents by normalized tag
-                    _id: '$normalizedTag',                      // Group by the normalized tag
-                    count: { $sum: 1 }                          // Count the occurrences
-                }},
-            { $sort: { count: -1 } },                     // Sort by count in descending order
-            { $limit: 10 }                                // Limit to top 10
-        ])).map((item: any) => item._id)
+        const tags = (
+            await this.postRepository.raw([
+                { $unwind: '$tags' }, // Deconstructs the tags array
+                {
+                    $addFields: {
+                        normalizedTag: {
+                            $trim: { input: { $toLower: '$tags' } },
+                        },
+                    },
+                }, // Normalize tags
+                {
+                    $group: {
+                        // Groups the documents by normalized tag
+                        _id: '$normalizedTag', // Group by the normalized tag
+                        count: { $sum: 1 }, // Count the occurrences
+                    },
+                },
+                { $sort: { count: -1 } }, // Sort by count in descending order
+                { $limit: 10 }, // Limit to top 10
+            ])
+        ).map((item: any) => item._id);
 
-        console.log('tags: ', tags)
+        console.log('tags: ', tags);
 
         return {
             featuredOfMonth,
             popularPost,
-            tags: tags
+            tags: tags,
         };
     }
 }

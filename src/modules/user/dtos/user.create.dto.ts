@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsString,
@@ -11,10 +11,12 @@ import {
     IsOptional,
     ValidateIf,
     IsEnum,
+    IsObject,
 } from 'class-validator';
 import { IsPasswordStrong } from 'src/common/request/validations/request.is-password-strong.validation';
 import { MobileNumberAllowed } from 'src/common/request/validations/request.mobile-number-allowed.validation';
 import { ENUM_USER_SIGN_UP_FROM } from 'src/modules/user/constants/user.enum.constant';
+import { AwsS3Serialization } from '../../../common/aws/serializations/aws.s3.serialization';
 
 export class UserCreateDto {
     @ApiProperty({
@@ -40,10 +42,9 @@ export class UserCreateDto {
 
     @ApiProperty({
         example: faker.person.lastName(),
-        required: true,
     })
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
     @MinLength(1)
     @MaxLength(30)
     @Type(() => String)
@@ -85,8 +86,19 @@ export class UserCreateDto {
     @MaxLength(50)
     readonly password: string;
 
+    @ApiProperty({
+        description: 'avatar of user',
+        example: faker.image.avatar(),
+    })
+    @IsOptional()
+    @IsObject()
+    readonly photo?: AwsS3Serialization;
+
     @IsEnum(ENUM_USER_SIGN_UP_FROM)
     @IsString()
     @IsNotEmpty()
     readonly signUpFrom: ENUM_USER_SIGN_UP_FROM;
+
+    @ApiHideProperty()
+    readonly isWaitingConfirmActivation?: boolean;
 }

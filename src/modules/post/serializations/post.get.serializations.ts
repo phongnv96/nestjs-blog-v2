@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { Exclude, Transform } from 'class-transformer';
 import { TranslationGetSerialization } from './translation.get.serilizations';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
 import { CategoryGetSerialization } from './category.get.serializations';

@@ -12,6 +12,10 @@ import { PostModule } from 'src/modules/post/post.module';
 import { AwsModule } from 'src/common/aws/aws.module';
 import { PostPublicController } from 'src/modules/post/controllers/post.public.controller';
 import { CategoryPublicController } from 'src/modules/post/controllers/category.public.controller';
+import { CommentPublicController } from '../../modules/comment/controllers/comment.public.controller';
+import { CommentModule } from '../../modules/comment/comment.module';
+import { GCPModule } from '../../common/gcp/gcp.module';
+import { MailModule } from '../../common/mail/mail.module';
 
 @Module({
     controllers: [
@@ -20,7 +24,8 @@ import { CategoryPublicController } from 'src/modules/post/controllers/category.
         SettingPublicController,
         UserPublicController,
         PostPublicController,
-        CategoryPublicController
+        CategoryPublicController,
+        CommentPublicController,
     ],
     providers: [],
     exports: [],
@@ -32,6 +37,10 @@ import { CategoryPublicController } from 'src/modules/post/controllers/category.
         RoleModule,
         PostModule,
         AwsModule,
+        CommentModule,
+        GCPModule,
+        MailModule,
     ],
 })
-export class RoutesPublicModule {}
+export class RoutesPublicModule {
+}

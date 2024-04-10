@@ -23,6 +23,8 @@ import {
     UserEntity,
 } from 'src/modules/user/repository/entities/user.entity';
 import { UserPayloadSerialization } from 'src/modules/user/serializations/user.payload.serialization';
+import { UserUpdateGithubSSODto } from '../dtos/user.update-gitgub-sso.dto';
+import { UserUpdateGoogleSSODto } from '../dtos/user.update-google-sso.dto';
 
 export interface IUserService {
     findAll(
@@ -51,7 +53,14 @@ export interface IUserService {
         options?: IDatabaseGetTotalOptions
     ): Promise<number>;
     create(
-        { firstName, lastName, email, mobileNumber, role }: UserCreateDto,
+        {
+            firstName,
+            lastName,
+            email,
+            mobileNumber,
+            role,
+            photo,
+        }: UserCreateDto,
         { passwordExpired, passwordHash, salt, passwordCreated }: IAuthPassword,
         options?: IDatabaseCreateOptions
     ): Promise<UserDoc>;
@@ -135,6 +144,19 @@ export interface IUserService {
         find: Record<string, any>,
         options?: IDatabaseManyOptions
     ): Promise<boolean>;
+
+    updateGoogleSSO(
+        repository: UserDoc,
+        { accessToken, refreshToken }: UserUpdateGoogleSSODto,
+        options?: IDatabaseSaveOptions
+    ): Promise<UserDoc>;
+
+    updateGithubSSO(
+        repository: UserDoc,
+        { accessToken, refreshToken }: UserUpdateGithubSSODto,
+        options?: IDatabaseSaveOptions
+    ): Promise<UserDoc>;
+
     import(
         data: UserImportDto[],
         role: string,

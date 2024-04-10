@@ -5,7 +5,8 @@ import {
     Headers,
     Req,
     Res,
-    NotFoundException, Query,
+    NotFoundException,
+    Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiKeyPublicProtected } from 'src/common/api-key/decorators/api-key.decorator';
@@ -33,11 +34,11 @@ import { PostEntity } from '../repository/entities/post.entity';
 import { PostService } from '../services/post.service';
 import { PostListSerialization } from '../serializations/post.list.serializations';
 import { PostGetSerialization } from '../serializations/post.get.serializations';
-import { PostRequestDto } from '../dtos/post.request.dto';
+import { PostByIdRequestDto, PostRequestDto } from '../dtos/post.request.dto';
 import {
     PostDetailGetDoc,
     PostGetHomeHeaderDoc,
-    PostListDoc,
+    PostListDoc, PostListTagsDoc,
 } from '../docs/post.docs';
 import { Response as EResponse, Request as ERequest } from 'express';
 import { GetUser } from 'src/modules/user/decorators/user.decorator';
@@ -46,6 +47,7 @@ import { ENUM_POST_STATUS_CODE_ERROR } from '../constants/post.status-code.const
 import { PostGetHomeHeaderSerialization } from '../serializations/post.get.home.header.serializations';
 import { CategoryService } from '../services/category.service';
 import { TranslationService } from '../services/translation.service';
+import { PostCreateDto } from '../dtos/post.create.dto';
 
 @ApiTags('modules.public.post')
 @Controller({
@@ -57,8 +59,9 @@ export class PostPublicController {
         private readonly paginationService: PaginationService,
         private readonly PostService: PostService,
         private readonly translationServices: TranslationService,
-        private readonly categoryService: CategoryService
-    ) {}
+        private readonly categoryService: CategoryService,
+    ) {
+    }
 
     @PostListDoc()
     @ResponsePaging('post.list', {
@@ -73,9 +76,9 @@ export class PostPublicController {
             POST_DEFAULT_ORDER_BY,
             POST_DEFAULT_ORDER_DIRECTION,
             POST_DEFAULT_AVAILABLE_SEARCH,
-            POST_DEFAULT_AVAILABLE_ORDER_BY
+            POST_DEFAULT_AVAILABLE_ORDER_BY,
         )
-        { _search, _limit, _offset, _order }: PaginationListDto
+            { _search, _limit, _offset, _order }: PaginationListDto,
         // @PaginationQueryFilterInBoolean('isActive', POST_DEFAULT_IS_ACTIVE)
         // isActive: Record<string, any>,
     ): Promise<IResponsePaging> {
@@ -104,7 +107,7 @@ export class PostPublicController {
         const total: number = await this.PostService.getTotal(find);
         const totalPage: number = this.paginationService.totalPage(
             total,
-            _limit
+            _limit,
         );
 
         return {
@@ -138,26 +141,29 @@ export class PostPublicController {
         @Param() { slug }: PostRequestDto,
         @Req() request: ERequest,
         @Res({ passthrough: true }) response: EResponse,
-        @GetUser() user: UserEntity
+        @GetUser() user: UserEntity,
     ): Promise<IResponse> {
-        const translation = await this.translationServices.findOne({slug: slug})
-        if(!translation) {
+        const [translation] = await Promise.all([this.translationServices.findOne({
+            slug: slug,
+        })]);
+        if (!translation) {
             throw new NotFoundException({
                 statusCode: ENUM_POST_STATUS_CODE_ERROR.POST_NOT_FOUND_ERROR,
                 message: 'post.error.notFound',
             });
         }
-        const detailPost = await this.PostService.findOne({
-            'translations' : translation._id
+        const detailPost = await this.PostService.findOne(
+            {
+                translations: translation._id,
             },
             {
                 join: [
                     {
                         path: 'translations',
-                        match: { language: language},
+                        match: { language: language },
                     },
                 ],
-            }
+            } as any,
         );
         if (!detailPost) {
             throw new NotFoundException({
@@ -165,6 +171,11 @@ export class PostPublicController {
                 message: 'post.error.notFound',
             });
         }
+        await this.PostService.increasingView(detailPost._id, {
+            ipAddress: request.ip,
+            userId: user?._id || null,
+            postId: detailPost._id,
+        });
         const cookiePostDetail = request?.cookies?.[slug];
         console.log('cookie-read: ', cookiePostDetail);
         if (!cookiePostDetail) {
@@ -172,10 +183,36 @@ export class PostPublicController {
                 httpOnly: true,
                 maxAge: 2 * 60 * 1000,
             });
-            await this.PostService.increasingView(detailPost._id, {
-                ipAddress: request.ip,
-                userId: user?._id || null,
-                postId: detailPost._id,
+            // await this.PostService.increasingView(detailPost._id, {
+            //     ipAddress: request.ip,
+            //     userId: user?._id || null,
+            //     postId: detailPost._id,
+            // });
+        }
+        return { data: detailPost };
+    }
+
+    @Response('post.get.by.id', {
+        serialization: PostGetSerialization,
+    })
+    @PostDetailGetDoc()
+    @ApiKeyPublicProtected()
+    @RequestParamGuard(PostByIdRequestDto)
+    @Get('get-by-id/:id')
+    async getPostById(@Param() { id }: PostByIdRequestDto): Promise<IResponse> {
+        const detailPost = (
+            await this.PostService.findOneById(id, {
+                join: [
+                    {
+                        path: 'translations',
+                    },
+                ],
+            } as any)
+        ).toObject<PostCreateDto>();
+        if (!detailPost) {
+            throw new NotFoundException({
+                statusCode: ENUM_POST_STATUS_CODE_ERROR.POST_NOT_FOUND_ERROR,
+                message: 'post.error.notFound',
             });
         }
         return { data: detailPost };
@@ -194,10 +231,10 @@ export class PostPublicController {
             POST_DEFAULT_ORDER_BY,
             POST_DEFAULT_ORDER_DIRECTION,
             POST_DEFAULT_AVAILABLE_SEARCH,
-            POST_DEFAULT_AVAILABLE_ORDER_BY
+            POST_DEFAULT_AVAILABLE_ORDER_BY,
         )
-        { _search, _limit, _offset, _order }: PaginationListDto,
-        @Query() { slug }: any
+            { _search, _limit, _offset, _order }: PaginationListDto,
+        @Query() { slug }: any,
     ): Promise<IResponsePaging> {
         console.log('x-custom-lang: ', lang);
         const find: Record<string, any> = {
@@ -238,13 +275,13 @@ export class PostPublicController {
                     },
                     { path: 'author', select: 'firstName lastName _id' },
                 ],
-            }
+            },
         );
 
         const total: number = await this.PostService.getTotal(find);
         const totalPage: number = this.paginationService.totalPage(
             total,
-            _limit
+            _limit,
         );
 
         return {
@@ -252,4 +289,69 @@ export class PostPublicController {
             data: Posts,
         };
     }
+
+    @PostListTagsDoc()
+    @ResponsePaging('post.list', {
+        serialization: PostListSerialization,
+    })
+    @ApiKeyPublicProtected()
+    @Get('/tags')
+    async getPostByTags(
+        @Headers('x-custom-lang') lang: string,
+        @PaginationQuery(
+            POST_DEFAULT_PER_PAGE,
+            POST_DEFAULT_ORDER_BY,
+            POST_DEFAULT_ORDER_DIRECTION,
+            POST_DEFAULT_AVAILABLE_SEARCH,
+            POST_DEFAULT_AVAILABLE_ORDER_BY,
+        )
+            { _search, _limit, _offset, _order }: PaginationListDto,
+        @Query() { tags }: any,
+    ): Promise<IResponsePaging> {
+        let tagsArray = tags;
+        if (!Array.isArray(tags)) {
+            tagsArray = tags ? [tags] : [];
+        }
+        const find: Record<string, any> = {
+            ..._search,
+            $or: tagsArray?.map(tag => ({
+                tags: {
+                    $regex: tag,
+                    $options: 'i',
+                },
+            })),
+            // ...isActive,
+        };
+
+        const Posts: PostEntity[] = await this.PostService.findAll(
+            { ...find },
+            {
+                paging: {
+                    limit: _limit,
+                    offset: _offset,
+                },
+                order: _order,
+                join: [
+                    {
+                        path: 'translations',
+                        select: '-content',
+                        match: { language: lang },
+                    },
+                    { path: 'author', select: 'firstName lastName _id' },
+                ],
+            },
+        );
+
+        const total: number = await this.PostService.getTotal(find);
+        const totalPage: number = this.paginationService.totalPage(
+            total,
+            _limit,
+        );
+
+        return {
+            _pagination: { total, totalPage },
+            data: Posts,
+        };
+    }
+
 }

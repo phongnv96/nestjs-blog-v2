@@ -1,11 +1,17 @@
 import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { CallbackWithoutResultAndOptionalError, Document } from 'mongoose';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { DatabaseMongoUUIDEntityAbstract } from 'src/common/database/abstracts/mongo/entities/database.mongo.uuid.entity.abstract';
+import {
+    DatabaseMongoUUIDEntityAbstract,
+} from 'src/common/database/abstracts/mongo/entities/database.mongo.uuid.entity.abstract';
 import { DatabaseEntity } from 'src/common/database/decorators/database.decorator';
 import { RoleEntity } from 'src/modules/role/repository/entities/role.entity';
 import { ENUM_USER_SIGN_UP_FROM } from 'src/modules/user/constants/user.enum.constant';
-import { IUserGoogleEntity } from '../../interfaces/user.interface';
+import {
+    IUserFacebookEntity,
+    IUserGithubEntity,
+    IUserGoogleEntity,
+} from '../../interfaces/user.interface';
 
 export const UserDatabaseName = 'users';
 
@@ -33,7 +39,6 @@ export class UserEntity extends DatabaseMongoUUIDEntityAbstract {
     firstName: string;
 
     @Prop({
-        required: true,
         index: true,
         lowercase: true,
         trim: true,
@@ -136,6 +141,14 @@ export class UserEntity extends DatabaseMongoUUIDEntityAbstract {
     inactiveDate?: Date;
 
     @Prop({
+        required: false,
+        default: false,
+        index: true,
+        type: Boolean,
+    })
+    isWaitingConfirmActivation: boolean;
+
+    @Prop({
         required: true,
         default: false,
         index: true,
@@ -173,16 +186,26 @@ export class UserEntity extends DatabaseMongoUUIDEntityAbstract {
     })
     google?: IUserGoogleEntity;
 
+    @Prop({
+        required: false,
+        _id: false,
+        type: {
+            accessToken: String,
+            refreshToken: String,
+        },
+    })
+    github?: IUserGithubEntity;
+    facebook?: IUserFacebookEntity;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserEntity);
 
 export type UserDoc = UserEntity & Document;
 
-UserSchema.pre('save', function (next: CallbackWithoutResultAndOptionalError) {
+UserSchema.pre('save', function(next: CallbackWithoutResultAndOptionalError) {
     this.email = this.email.toLowerCase();
     this.firstName = this.firstName.toLowerCase();
-    this.lastName = this.lastName.toLowerCase();
+    this.lastName = this.lastName?.toLowerCase();
 
     next();
 });

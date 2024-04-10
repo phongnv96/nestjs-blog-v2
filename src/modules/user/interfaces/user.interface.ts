@@ -19,3 +19,13 @@ export interface IUserGoogleEntity {
     accessToken: string;
     refreshToken: string;
 }
+
+export interface IUserGithubEntity {
+    accessToken: string;
+    refreshToken: string;
+}
+
+export interface IUserFacebookEntity {
+    accessToken: string;
+    refreshToken: string;
+}

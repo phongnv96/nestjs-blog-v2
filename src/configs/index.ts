@@ -11,6 +11,10 @@ import DebuggerConfig from './debugger.config';
 import MessageConfig from './message.config';
 import GoogleConfig from './google.config';
 import PostConfig from './post.config';
+import FacebookConfig from './facebook.config';
+import GithubConfig from './github.config';
+import ClientConfig from './client.config';
+import MailConfig from './mail.config';
 
 export default [
     AppConfig,
@@ -25,5 +29,9 @@ export default [
     DebuggerConfig,
     MessageConfig,
     GoogleConfig,
-    PostConfig
+    PostConfig,
+    FacebookConfig,
+    GithubConfig,
+    ClientConfig,
+    MailConfig,
 ];

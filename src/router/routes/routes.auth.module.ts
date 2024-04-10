@@ -6,6 +6,7 @@ import { PostAuthController } from 'src/modules/post/controllers/post.auth.contr
 import { PostModule } from 'src/modules/post/post.module';
 import { UserAuthController } from 'src/modules/user/controllers/user.auth.controller';
 import { UserModule } from 'src/modules/user/user.module';
+import { GCPModule } from '../../common/gcp/gcp.module';
 
 @Module({
     controllers: [
@@ -15,6 +16,6 @@ import { UserModule } from 'src/modules/user/user.module';
     ],
     providers: [],
     exports: [],
-    imports: [UserModule, AuthModule, AwsModule, PostModule],
+    imports: [UserModule, AuthModule, AwsModule, PostModule, GCPModule],
 })
 export class RoutesAuthModule {}

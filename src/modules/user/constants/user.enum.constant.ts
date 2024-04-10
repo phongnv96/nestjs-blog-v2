@@ -1,5 +1,6 @@
 export enum ENUM_USER_SIGN_UP_FROM {
     PUBLIC = 'PUBLIC',
     ADMIN = 'ADMIN',
-    GOOGLE = 'GOOGLE'
+    GOOGLE = 'GOOGLE',
+    GITHUB = 'GITHUB',
 }

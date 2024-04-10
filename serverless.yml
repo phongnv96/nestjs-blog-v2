@@ -6,8 +6,14 @@ plugins:
 
 provider:
   name: aws
-  runtime: nodejs16.x
-  timeout: 300000
+  runtime: nodejs20.x
+package:
+  individually: true
+  excludeDevDependencies: true
+  exclude:
+    - tests/**
+    - .gitignore
+    - .git/**
 
 functions:
   main:

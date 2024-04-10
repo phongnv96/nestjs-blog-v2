@@ -6,13 +6,14 @@ import {
     HttpCode,
     HttpStatus,
     Post,
+    Put,
     UploadedFile,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ApiKeyPublicProtected } from 'src/common/api-key/decorators/api-key.decorator';
 import {
     AuthJwtAccessProtected,
-    AuthJwtAdminAccessProtected,
+    AuthJwtAdminAccessProtected, AuthJwtUserAccessProtected,
 } from 'src/common/auth/decorators/auth.jwt.decorator';
 import {
     ENUM_POLICY_ACTION,
@@ -20,12 +21,8 @@ import {
 } from 'src/common/policy/constants/policy.enum.constant';
 import { PolicyAbilityProtected } from 'src/common/policy/decorators/policy.decorator';
 import { RequestParamGuard } from 'src/common/request/decorators/request.decorator';
-import {
-    Response,
-} from 'src/common/response/decorators/response.decorator';
-import {
-    IResponse,
-} from 'src/common/response/interfaces/response.interface';
+import { Response } from 'src/common/response/decorators/response.decorator';
+import { IResponse } from 'src/common/response/interfaces/response.interface';
 
 import { PostCreateDto } from '../dtos/post.create.dto';
 import { PostEntity } from '../repository/entities/post.entity';
@@ -34,6 +31,7 @@ import { PostGetSerialization } from '../serializations/post.get.serializations'
 import { GetPost } from '../decorators/post.decorator';
 import { PostRequestDto } from '../dtos/post.request.dto';
 import {
+    PostAdminClapDoc,
     PostAdminCreateDoc,
     PostDetailGetDoc,
     PostUploadProfileDoc,
@@ -52,6 +50,8 @@ import {
 } from 'src/modules/user/decorators/user.decorator';
 import { UserDoc } from 'src/modules/user/repository/entities/user.entity';
 import { ResponseIdSerialization } from 'src/common/response/serializations/response.id.serialization';
+import { GCPStorageService } from '../../../common/gcp/services/gcp.storage.service';
+import { PostClapDto } from '../dtos/post.clap.dto';
 
 @ApiTags('modules.auth.post')
 @Controller({
@@ -61,8 +61,10 @@ import { ResponseIdSerialization } from 'src/common/response/serializations/resp
 export class PostAuthController {
     constructor(
         private readonly PostService: PostService,
-        private readonly awsS3Service: AwsS3Service
-    ) {}
+        private readonly awsS3Service: AwsS3Service,
+        private readonly gcpStorageService: GCPStorageService,
+    ) {
+    }
 
     @PostDetailGetDoc()
     @Response('post.get', {
@@ -95,10 +97,10 @@ export class PostAuthController {
     async create(
         @GetUser() user: UserDoc,
         @Body()
-        { photo, tags, thumbnail, translations, categories }: PostCreateDto
+            { photo, tags, thumbnail, translations, categories }: PostCreateDto,
     ): Promise<IResponse> {
         const exist: boolean = await this.PostService.existByTitle(
-            translations.map((item) => item.title)
+            translations.map((item) => item.title),
         );
         if (exist) {
             throw new ConflictException({
@@ -113,11 +115,92 @@ export class PostAuthController {
             tags,
             thumbnail,
             translations,
-            categories
+            categories,
         });
 
         return {
             data: { _id: create._id },
+        };
+    }
+
+    @PostAdminCreateDoc()
+    @Response('post.create', {
+        serialization: ResponseIdSerialization,
+    })
+    @UserProtected()
+    @PolicyAbilityProtected({
+        subject: ENUM_POLICY_SUBJECT.POST,
+        action: [ENUM_POLICY_ACTION.READ, ENUM_POLICY_ACTION.CREATE],
+    })
+    @AuthJwtAdminAccessProtected()
+    @ApiKeyPublicProtected()
+    @Put('/update')
+    async update(
+        @GetUser() user: UserDoc,
+        @Body()
+            { photo, tags, thumbnail, translations, categories, _id }: PostCreateDto,
+    ): Promise<IResponse> {
+        const exist = await this.PostService.findOneById(_id);
+        if (!exist) {
+            throw new ConflictException({
+                statusCode: ENUM_POST_STATUS_CODE_ERROR.POST_NOT_FOUND_ERROR,
+                message: 'post.not.found',
+            });
+        }
+        const author = user._id;
+        const update = await this.PostService.update(exist, {
+            author,
+            photo,
+            tags,
+            thumbnail,
+            translations,
+            categories,
+        });
+
+        return {
+            data: { _id: update._id },
+        };
+    }
+
+    @PostAdminClapDoc()
+    @Response('post.clap', {
+        serialization: ResponseIdSerialization,
+    })
+    @UserProtected()
+    @PolicyAbilityProtected({
+        subject: ENUM_POLICY_SUBJECT.POST,
+        action: [ENUM_POLICY_ACTION.MANAGE],
+    })
+    @AuthJwtUserAccessProtected()
+    @ApiKeyPublicProtected()
+    @Put('/clap')
+    async clap(
+        @GetUser() user: UserDoc,
+        @Body()
+            { _id, clap }: PostClapDto,
+    ): Promise<IResponse> {
+        const exist = await this.PostService.findOneById(_id);
+        if (!exist) {
+            throw new ConflictException({
+                statusCode: ENUM_POST_STATUS_CODE_ERROR.POST_NOT_FOUND_ERROR,
+                message: 'post.not.found',
+            });
+        }
+        const author = user._id;
+        const claps = exist.claps;
+        const index = claps.findIndex((item) => item.author === author);
+        if (index !== -1) {
+            claps[index].clap = parseInt(clap);
+        } else {
+            claps.push({ author, clap: parseInt(clap) });
+        }
+        const update = await this.PostService.update(exist, {
+            ...exist.toObject(),
+            claps,
+        });
+
+        return {
+            data: { _id: update._id },
         };
     }
 
@@ -134,7 +217,7 @@ export class PostAuthController {
     async upload(
         @GetUser() user: UserDoc,
         @UploadedFile(FileRequiredPipe, FileSizeImagePipe, FileTypeImagePipe)
-        file: IFile
+            file: IFile,
     ): Promise<IResponse> {
         const filename: string = file.originalname;
         const content: Buffer = file.buffer;
@@ -144,13 +227,13 @@ export class PostAuthController {
 
         const path = await this.PostService.createPhotoFilename();
 
-        const aws: AwsS3Serialization = await this.awsS3Service.putItemInBucket(
+        const aws: AwsS3Serialization = await this.gcpStorageService.uploadFile(
             `${path.filename}.${mime}`,
-            content,
+            file,
             {
                 path: `${path.path}/${user._id}`,
                 ContentType: file.mimetype,
-            }
+            },
         );
 
         return {

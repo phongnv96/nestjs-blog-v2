@@ -24,6 +24,7 @@ export class AuthJwtAccessStrategy extends PassportStrategy(Strategy, 'jwt') {
             secretOrKey: configService.get<string>(
                 'auth.accessToken.secretKey'
             ),
+            algorithms: ['HS256'],
         });
     }
 

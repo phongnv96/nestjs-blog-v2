@@ -2,6 +2,7 @@ import {
     ENUM_AUTH_LOGIN_FROM,
     ENUM_AUTH_LOGIN_WITH,
 } from 'src/common/auth/constants/auth.enum.constant';
+import { AwsS3Serialization } from '../../aws/serializations/aws.s3.serialization';
 
 // Auth
 export interface IAuthPassword {
@@ -28,5 +29,23 @@ export interface IAuthGooglePayload {
     lastName: string;
     accessToken: string;
     refreshToken: string;
+    photo?: any;
 }
 
+export interface IAuthFacebookPayload {
+    firstName: string;
+    lastName: string;
+    accessToken: string;
+    refreshToken: string;
+    email: string;
+    photo?: any;
+}
+
+export interface IAuthGithubPayload {
+    email: string;
+    firstName: string;
+    lastName?: string;
+    accessToken: string;
+    refreshToken: string;
+    photo?: any;
+}

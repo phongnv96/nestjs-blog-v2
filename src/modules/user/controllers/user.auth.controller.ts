@@ -75,6 +75,7 @@ import { ENUM_ERROR_STATUS_CODE_ERROR } from 'src/common/error/constants/error.s
 import { FileUploadSingle } from 'src/common/file/decorators/file.decorator';
 import { ApiKeyPublicProtected } from 'src/common/api-key/decorators/api-key.decorator';
 import { Response as EResponse } from 'express';
+
 @ApiTags('modules.auth.user')
 @Controller({
     version: '1',
@@ -86,8 +87,9 @@ export class UserAuthController {
         private readonly userService: UserService,
         private readonly authService: AuthService,
         private readonly settingService: SettingService,
-        private readonly awsS3Service: AwsS3Service
-    ) {}
+        private readonly awsS3Service: AwsS3Service,
+    ) {
+    }
 
     @UserAuthLoginDoc()
     @Response('user.login', {
@@ -98,13 +100,20 @@ export class UserAuthController {
     @Post('/login')
     async login(
         @Body() { email, password }: UserLoginDto,
-        @Res({ passthrough: true }) response: EResponse
+        @Res({ passthrough: true }) response: EResponse,
     ): Promise<IResponse> {
         const user: UserDoc = await this.userService.findOneByEmail(email);
         if (!user) {
             throw new NotFoundException({
                 statusCode: ENUM_USER_STATUS_CODE_ERROR.USER_NOT_FOUND_ERROR,
                 message: 'user.error.notFound',
+            });
+        }
+
+        if (user.isWaitingConfirmActivation) {
+            throw new NotFoundException({
+                statusCode: ENUM_USER_STATUS_CODE_ERROR.USER_NEED_TO_CONFIRM,
+                message: 'user.error.needTo.confirmEmail',
             });
         }
 
@@ -115,21 +124,21 @@ export class UserAuthController {
         if (passwordAttempt && user.passwordAttempt >= maxPasswordAttempt) {
             throw new ForbiddenException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_ATTEMPT_MAX_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_ATTEMPT_MAX_ERROR,
                 message: 'user.error.passwordAttemptMax',
             });
         }
 
         const validate: boolean = await this.authService.validateUser(
             password,
-            user.password
+            user.password,
         );
         if (!validate) {
             await this.userService.increasePasswordAttempt(user);
 
             throw new BadRequestException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_NOT_MATCH_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_NOT_MATCH_ERROR,
                 message: 'user.error.passwordNotMatch',
             });
         } else if (user.blocked) {
@@ -140,7 +149,7 @@ export class UserAuthController {
         } else if (user.inactivePermanent) {
             throw new ForbiddenException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_INACTIVE_PERMANENT_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_INACTIVE_PERMANENT_ERROR,
                 message: 'user.error.inactivePermanent',
             });
         } else if (!user.isActive) {
@@ -150,8 +159,9 @@ export class UserAuthController {
             });
         }
 
-        const userWithRole: IUserDoc =
-            await this.userService.joinWithRole(user);
+        const userWithRole: IUserDoc = await this.userService.joinWithRole(
+            user,
+        );
         if (!userWithRole.role.isActive) {
             throw new ForbiddenException({
                 statusCode: ENUM_ROLE_STATUS_CODE_ERROR.ROLE_INACTIVE_ERROR,
@@ -176,7 +186,7 @@ export class UserAuthController {
         const payloadRefreshToken: AuthRefreshPayloadSerialization =
             await this.authService.createPayloadRefreshToken(
                 payload._id,
-                payloadAccessToken
+                payloadAccessToken,
             );
 
         const payloadEncryption = await this.authService.getPayloadEncryption();
@@ -195,10 +205,10 @@ export class UserAuthController {
 
         const roleType = userWithRole.role.type;
         const accessToken: string = await this.authService.createAccessToken(
-            payloadHashedAccessToken
+            payloadHashedAccessToken,
         );
         const refreshToken: string = await this.authService.createRefreshToken(
-            payloadHashedRefreshToken
+            payloadHashedRefreshToken,
         );
 
         const checkPasswordExpired: boolean =
@@ -207,7 +217,7 @@ export class UserAuthController {
         if (checkPasswordExpired) {
             throw new ForbiddenException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_EXPIRED_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_EXPIRED_ERROR,
                 message: 'user.error.passwordExpired',
             });
         }
@@ -229,10 +239,10 @@ export class UserAuthController {
     @Get('/login/google')
     async loginGoogle(
         @AuthJwtPayload<AuthGooglePayloadSerialization>()
-        { user: userPayload }: AuthGooglePayloadSerialization
+            { user: userPayload }: AuthGooglePayloadSerialization,
     ): Promise<IResponse> {
         const user: UserDoc = await this.userService.findOneByEmail(
-            userPayload.email
+            userPayload.email,
         );
 
         if (!user) {
@@ -248,7 +258,7 @@ export class UserAuthController {
         } else if (user.inactivePermanent) {
             throw new ForbiddenException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_INACTIVE_PERMANENT_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_INACTIVE_PERMANENT_ERROR,
                 message: 'user.error.inactivePermanent',
             });
         } else if (!user.isActive) {
@@ -258,8 +268,9 @@ export class UserAuthController {
             });
         }
 
-        const userWithRole: IUserDoc =
-            await this.userService.joinWithRole(user);
+        const userWithRole: IUserDoc = await this.userService.joinWithRole(
+            user,
+        );
         if (!userWithRole.role.isActive) {
             throw new ForbiddenException({
                 statusCode: ENUM_ROLE_STATUS_CODE_ERROR.ROLE_INACTIVE_ERROR,
@@ -275,14 +286,14 @@ export class UserAuthController {
             await this.authService.getAccessTokenExpirationTime();
         const payloadAccessToken: AuthAccessPayloadSerialization =
             await this.authService.createPayloadAccessToken(payload, {
-                loginWith: ENUM_AUTH_LOGIN_WITH.EMAIL,
-                loginFrom: ENUM_AUTH_LOGIN_FROM.PASSWORD,
+                loginWith: ENUM_AUTH_LOGIN_WITH.GOOGLE,
+                loginFrom: ENUM_AUTH_LOGIN_FROM.GOOGLE,
                 loginDate,
             });
         const payloadRefreshToken: AuthRefreshPayloadSerialization =
             await this.authService.createPayloadRefreshToken(
                 payload._id,
-                payloadAccessToken
+                payloadAccessToken,
             );
 
         const payloadEncryption = await this.authService.getPayloadEncryption();
@@ -301,10 +312,10 @@ export class UserAuthController {
 
         const roleType = userWithRole.role.type;
         const accessToken: string = await this.authService.createAccessToken(
-            payloadHashedAccessToken
+            payloadHashedAccessToken,
         );
         const refreshToken: string = await this.authService.createRefreshToken(
-            payloadHashedRefreshToken
+            payloadHashedRefreshToken,
         );
 
         return {
@@ -329,11 +340,12 @@ export class UserAuthController {
     async refresh(
         @AuthJwtToken() refreshToken: string,
         @AuthJwtPayload<AuthRefreshPayloadSerialization>()
-        refreshPayload: AuthRefreshPayloadSerialization,
-        @GetUser() user: UserDoc
+            refreshPayload: AuthRefreshPayloadSerialization,
+        @GetUser() user: UserDoc,
     ): Promise<IResponse> {
-        const userWithRole: IUserDoc =
-            await this.userService.joinWithRole(user);
+        const userWithRole: IUserDoc = await this.userService.joinWithRole(
+            user,
+        );
         if (!userWithRole.role.isActive) {
             throw new ForbiddenException({
                 statusCode: ENUM_ROLE_STATUS_CODE_ERROR.ROLE_INACTIVE_ERROR,
@@ -347,7 +359,7 @@ export class UserAuthController {
         if (checkPasswordExpired) {
             throw new ForbiddenException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_EXPIRED_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_EXPIRED_ERROR,
                 message: 'user.error.passwordExpired',
             });
         }
@@ -375,7 +387,7 @@ export class UserAuthController {
 
         const roleType = userWithRole.role.type;
         const accessToken: string = await this.authService.createAccessToken(
-            payloadHashedAccessToken
+            payloadHashedAccessToken,
         );
 
         return {
@@ -397,7 +409,7 @@ export class UserAuthController {
     @Patch('/change-password')
     async changePassword(
         @Body() body: UserChangePasswordDto,
-        @GetUser() user: UserDoc
+        @GetUser() user: UserDoc,
     ): Promise<void> {
         const passwordAttempt: boolean =
             await this.settingService.getPasswordAttempt();
@@ -406,33 +418,33 @@ export class UserAuthController {
         if (passwordAttempt && user.passwordAttempt >= maxPasswordAttempt) {
             throw new ForbiddenException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_ATTEMPT_MAX_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_ATTEMPT_MAX_ERROR,
                 message: 'user.error.passwordAttemptMax',
             });
         }
 
         const matchPassword: boolean = await this.authService.validateUser(
             body.oldPassword,
-            user.password
+            user.password,
         );
         if (!matchPassword) {
             await this.userService.increasePasswordAttempt(user);
 
             throw new BadRequestException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_NOT_MATCH_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_NOT_MATCH_ERROR,
                 message: 'user.error.passwordNotMatch',
             });
         }
 
         const newMatchPassword: boolean = await this.authService.validateUser(
             body.newPassword,
-            user.password
+            user.password,
         );
         if (newMatchPassword) {
             throw new BadRequestException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_NEW_MUST_DIFFERENCE_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_NEW_MUST_DIFFERENCE_ERROR,
                 message: 'user.error.newPasswordMustDifference',
             });
         }
@@ -472,7 +484,7 @@ export class UserAuthController {
     @Get('/info')
     async info(
         @AuthJwtPayload<AuthAccessPayloadSerialization>()
-        payload: AuthAccessPayloadSerialization
+            payload: AuthAccessPayloadSerialization,
     ): Promise<IResponse> {
         return { data: payload };
     }
@@ -486,8 +498,9 @@ export class UserAuthController {
     @ApiKeyPublicProtected()
     @Get('/profile')
     async profile(@GetUser() user: UserDoc): Promise<IResponse> {
-        const userWithRole: IUserDoc =
-            await this.userService.joinWithRole(user);
+        const userWithRole: IUserDoc = await this.userService.joinWithRole(
+            user,
+        );
         return { data: userWithRole.toObject() };
     }
 
@@ -499,7 +512,7 @@ export class UserAuthController {
     @Patch('/profile/update')
     async updateProfile(
         @GetUser() user: UserDoc,
-        @Body() body: UserUpdateNameDto
+        @Body() body: UserUpdateNameDto,
     ): Promise<void> {
         await this.userService.updateName(user, body);
 
@@ -514,14 +527,15 @@ export class UserAuthController {
     @Patch('/profile/claim-username')
     async claimUsername(
         @GetUser() user: UserDoc,
-        @Body() { username }: UserUpdateUsernameDto
+        @Body() { username }: UserUpdateUsernameDto,
     ): Promise<void> {
-        const checkUsername: boolean =
-            await this.userService.existByUsername(username);
+        const checkUsername: boolean = await this.userService.existByUsername(
+            username,
+        );
         if (checkUsername) {
             throw new ConflictException({
                 statusCode:
-                    ENUM_USER_STATUS_CODE_ERROR.USER_USERNAME_EXISTS_ERROR,
+                ENUM_USER_STATUS_CODE_ERROR.USER_USERNAME_EXISTS_ERROR,
                 message: 'user.error.usernameExist',
             });
         }
@@ -542,7 +556,7 @@ export class UserAuthController {
     async upload(
         @GetUser() user: UserDoc,
         @UploadedFile(FileRequiredPipe, FileSizeImagePipe, FileTypeImagePipe)
-        file: IFile
+            file: IFile,
     ): Promise<void> {
         const filename: string = file.originalname;
         const content: Buffer = file.buffer;
@@ -557,7 +571,7 @@ export class UserAuthController {
             content,
             {
                 path: `${path.path}/${user._id}`,
-            }
+            },
         );
         await this.userService.updatePhoto(user, aws);
 

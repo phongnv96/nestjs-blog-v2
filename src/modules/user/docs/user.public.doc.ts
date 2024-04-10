@@ -22,6 +22,26 @@ export function UserPublicSignUpDoc(): MethodDecorator {
         }),
         DocResponse('user.signUp', {
             httpStatus: HttpStatus.CREATED,
-        })
+        }),
+    );
+}
+
+export function UserPublicVerifyToken(): MethodDecorator {
+    return applyDecorators(
+        Doc({
+            summary: 'verify token to create new account',
+        }),
+        DocRequest({
+            params: [{
+                name: 'token',
+                type: 'string',
+            }],
+        }),
+        DocAuth({
+            apiKey: true,
+        }),
+        DocResponse('user.verifyToken', {
+            httpStatus: HttpStatus.CREATED,
+        }),
     );
 }

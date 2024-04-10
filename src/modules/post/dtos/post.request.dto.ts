@@ -5,3 +5,9 @@ export class PostRequestDto {
     @IsString()
     slug: string;
 }
+
+export class PostByIdRequestDto {
+    @IsNotEmpty()
+    @IsString()
+    id: string;
+}

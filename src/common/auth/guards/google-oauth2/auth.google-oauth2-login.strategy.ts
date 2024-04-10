@@ -13,12 +13,8 @@ export class AuthGoogleOAuth2LoginStrategy extends PassportStrategy(
     constructor(private readonly configService: ConfigService) {
         super({
             clientID: configService.get<string>('google.clientId'),
-            clientSecret: configService.get<string>(
-                'google.clientSecret'
-            ),
-            callbackURL: configService.get<string>(
-                'google.callbackLoginUrl'
-            ),
+            clientSecret: configService.get<string>('google.clientSecret'),
+            callbackURL: configService.get<string>('google.callbackLoginUrl'),
             scope: ['profile', 'email', 'openid'],
         });
     }
@@ -30,7 +26,11 @@ export class AuthGoogleOAuth2LoginStrategy extends PassportStrategy(
         done: VerifyCallback
     ): Promise<any> {
         const { name, emails } = profile;
+        console.log('profile google: ', profile);
         const user: IAuthGooglePayload = {
+            photo: {
+                completedUrl: profile?.photos?.[0]?.value,
+            },
             email: emails[0].value,
             firstName: name.givenName,
             lastName: name.familyName,

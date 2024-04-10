@@ -8,7 +8,7 @@ import { TranslationDoc } from '../repository/entities/translation.entity';
 export class PostCreateDto {
 
     @ApiHideProperty()
-    readonly _id ?: string
+    readonly _id ?: string;
 
     @ApiProperty({
         description: 'author id',
@@ -23,6 +23,20 @@ export class PostCreateDto {
     })
     @IsArray()
     readonly tags: string[];
+
+    @ApiProperty({
+        description: 'claps of post',
+        example: faker.helpers.arrayElements([{
+            author: faker.string.uuid(),
+            clap: faker.number.int(),
+        }]),
+        required: false,
+    })
+    @IsArray()
+    readonly claps?: {
+        author: string;
+        clap: number;
+    }[];
 
     @ApiProperty({
         description: 'categories of post',

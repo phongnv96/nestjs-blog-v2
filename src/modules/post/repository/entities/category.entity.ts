@@ -1,11 +1,11 @@
 import { Prop, SchemaFactory } from '@nestjs/mongoose';
-import { CallbackWithoutResultAndOptionalError, Document } from 'mongoose';
+import { Document } from 'mongoose';
 import { DatabaseMongoUUIDEntityAbstract } from 'src/common/database/abstracts/mongo/entities/database.mongo.uuid.entity.abstract';
 import { DatabaseEntity } from 'src/common/database/decorators/database.decorator';
 import { IsString } from 'class-validator';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
 
-export const CategoryDatabaseName = 'Categories';
+export const CategoryDatabaseName = 'categories';
 
 @DatabaseEntity({ collection: CategoryDatabaseName })
 export class CategoryEntity extends DatabaseMongoUUIDEntityAbstract {
@@ -13,7 +13,6 @@ export class CategoryEntity extends DatabaseMongoUUIDEntityAbstract {
         index: true,
         trim: true,
         type: String,
-        required: true,
     })
     @IsString()
     path: string;

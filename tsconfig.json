@@ -14,10 +14,10 @@
     "incremental": true,
     "skipLibCheck": true,
     "allowJs": false,
-    "esModuleInterop": false,
+    "esModuleInterop": true,
     "moduleResolution": "node",     
     "resolveJsonModule": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
+    // "tsBuildInfoFile": ".tsbuildinfo",
   },
   "include": [
     "src",

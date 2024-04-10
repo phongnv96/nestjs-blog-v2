@@ -5,6 +5,7 @@ import {
 } from 'aws-lambda';
 import { useContainer } from 'class-validator';
 import cookieParser from 'cookie-parser';
+import { AppModule } from 'src/app/app.module';
 
 import {
   Logger,
@@ -17,7 +18,6 @@ import {
 } from '@nestjs/core';
 import serverlessExpress from '@vendia/serverless-express';
 
-import { AppModule } from './app/app.module';
 import swaggerInit from './swagger';
 
 let server: Handler;
@@ -60,13 +60,13 @@ async function bootstrap() {
     }
 
     // Swagger
-    await swaggerInit(app);
+    await swaggerInit(app, true);
 
     // Cookies
     app.use(cookieParser());
 
     // Listen
-    await app.listen(port, host);
+    // await app.listen(port, host);
 
     logger.log(`==========================================================`);
 
@@ -84,10 +84,10 @@ async function bootstrap() {
     );
     logger.log(`Http versioning is ${versionEnable}`, 'NestApplication');
 
-    logger.log(
-        `Http Server running on ${await app.getUrl()}`,
-        'NestApplication'
-    );
+    // logger.log(
+    //     `Http Server running on ${await app.getUrl()}`,
+    //     'NestApplication'
+    // );
     logger.log(`Database uri ${databaseUri}`, 'NestApplication');
 
     logger.log(`==========================================================`);

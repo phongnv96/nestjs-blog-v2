@@ -23,5 +23,6 @@ export enum ENUM_POLICY_SUBJECT {
     SETTING = 'SETTING',
     ROLE = 'ROLE',
     USER = 'USER',
-    POST = 'POST'
+    POST = 'POST',
+    COMMENT = 'COMMENT',
 }
