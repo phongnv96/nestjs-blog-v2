@@ -7,20 +7,23 @@ import {
     IsOptional,
     MaxLength,
     IsArray,
+    IsMongoId,
+    IsEnum,
 } from 'class-validator';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
+import { ENUM_COMMENT_REFERENCE_TYPE } from '../constants/comment.enum.constant';
+
 export class CommentCreateDto {
     @ApiHideProperty()
     readonly author?: string;
 
-    @ApiProperty({
-        description: 'post id of comment',
-        // example: faker.string.uuid(),
-        example: 'd9da6dc7-b097-45db-b36e-95c2585bfb22',
-    })
     @IsNotEmpty()
-    @Type(() => String)
-    readonly post: string;
+    @IsMongoId()
+    reference: string;
+
+    @IsNotEmpty()
+    @IsEnum(ENUM_COMMENT_REFERENCE_TYPE)
+    referenceType: ENUM_COMMENT_REFERENCE_TYPE;
 
     @ApiProperty({
         description: 'thumbnail id of comment',
@@ -54,4 +57,11 @@ export class CommentCreateDto {
     @IsArray()
     @IsOptional()
     readonly photo?: AwsS3Serialization[];
+
+    @ApiProperty({
+        description: 'user likes id',
+    })
+    @IsArray()
+    @IsOptional()
+    readonly likes?: string[];
 }

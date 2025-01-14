@@ -190,9 +190,8 @@ describe('AwsS3Service', () => {
                 },
             ];
 
-            const result: AwsS3Serialization[] = await service.listItemInBucket(
-                'folder1'
-            );
+            const result: AwsS3Serialization[] =
+                await service.listItemInBucket('folder1');
 
             expect(service['s3Client'].send).toHaveBeenCalled();
             expect(result).toEqual(expected);

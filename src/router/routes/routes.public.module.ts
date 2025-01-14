@@ -11,11 +11,15 @@ import { RoleModule } from 'src/modules/role/role.module';
 import { PostModule } from 'src/modules/post/post.module';
 import { AwsModule } from 'src/common/aws/aws.module';
 import { PostPublicController } from 'src/modules/post/controllers/post.public.controller';
-import { CategoryPublicController } from 'src/modules/post/controllers/category.public.controller';
 import { CommentPublicController } from '../../modules/comment/controllers/comment.public.controller';
 import { CommentModule } from '../../modules/comment/comment.module';
 import { GCPModule } from '../../common/gcp/gcp.module';
 import { MailModule } from '../../common/mail/mail.module';
+import { ProductPublicController } from 'src/modules/product/controllers/product.public.controller';
+import { ProductModule } from 'src/modules/product/product.module';
+import { TranslationModule } from '../../modules/translation/translation.module';
+import { CategoryPublicController } from 'src/modules/category/controllers/category.public.controller';
+import { CategoryModule } from 'src/modules/category/category.module';
 
 @Module({
     controllers: [
@@ -25,6 +29,7 @@ import { MailModule } from '../../common/mail/mail.module';
         UserPublicController,
         PostPublicController,
         CategoryPublicController,
+        ProductPublicController,
         CommentPublicController,
     ],
     providers: [],
@@ -36,11 +41,13 @@ import { MailModule } from '../../common/mail/mail.module';
         AuthModule,
         RoleModule,
         PostModule,
+        ProductModule,
         AwsModule,
         CommentModule,
         GCPModule,
         MailModule,
+        TranslationModule,
+        CategoryModule,
     ],
 })
-export class RoutesPublicModule {
-}
+export class RoutesPublicModule {}

@@ -1,9 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsArray, IsObject } from 'class-validator';
-import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { TranslationDoc } from '../repository/entities/translation.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class PostClapDto {
     @ApiProperty({
@@ -11,7 +7,7 @@ export class PostClapDto {
         example: faker.string.uuid(),
         required: true,
     })
-    readonly _id ?: string
+    readonly _id?: string;
 
     @ApiProperty({
         description: 'number view of claps',

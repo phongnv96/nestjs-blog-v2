@@ -1,9 +1,9 @@
 import { faker } from '@faker-js/faker';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
-import { Exclude, Transform } from 'class-transformer';
-import { TranslationGetSerialization } from './translation.get.serilizations';
+import { Exclude } from 'class-transformer';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { CategoryGetSerialization } from './category.get.serializations';
+import { CategoryGetSerialization } from 'src/modules/category/serializations/category.get.serialization';
+import { TranslationGetSerialization } from 'src/modules/translation/serializations/translation.get.serilizations';
 
 class AuthorGetSerialization {
     @ApiProperty({

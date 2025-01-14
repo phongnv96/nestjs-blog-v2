@@ -3,8 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsObject } from 'class-validator';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { TranslationCreateDto } from './translation.create.dto';
-import { CategoryCreateDto } from './category.create.dto';
+import { TranslationCreateDto } from '../../translation/dtos/translation.create.dto';
+import { CategoryCreateDto } from 'src/modules/category/dtos/category.create.dto';
 
 export class PostListDto {
     @ApiProperty({

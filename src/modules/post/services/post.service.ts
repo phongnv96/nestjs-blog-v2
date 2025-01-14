@@ -15,14 +15,14 @@ import { PostEntity, PostDoc } from '../repository/entities/post.entity';
 import { PostRepository } from '../repository/repositories/post.repository';
 import { HelperStringService } from 'src/common/helper/services/helper.string.service';
 import { ConfigService } from '@nestjs/config';
-import { TranslationService } from './translation.service';
+import { TranslationService } from '../../translation/services/translation.service';
 import { PostUpdateDto } from '../dtos/post.update.dto';
 import { ViewCreateDto } from '../dtos/view.create.dto';
 import { ViewService } from './view.service';
-import { CategoryService } from './category.service';
 import { PostGetDto } from '../dtos/post.get.dto';
 import { ENUM_PAGINATION_ORDER_DIRECTION_TYPE } from 'src/common/pagination/constants/pagination.enum.constant';
 import { PostGetHomeDto } from '../dtos/post.home.dto';
+import { CategoryService } from 'src/modules/category/services/category.service';
 
 @Injectable()
 export class PostService implements IPostService {
@@ -34,7 +34,7 @@ export class PostService implements IPostService {
         private readonly configService: ConfigService,
         private readonly translationService: TranslationService,
         private readonly viewHistory: ViewService,
-        private readonly categoryService: CategoryService,
+        private readonly categoryService: CategoryService
     ) {
         this.uploadPath = this.configService.get<string>('post.uploadPath');
     }
@@ -48,21 +48,21 @@ export class PostService implements IPostService {
 
     async findAll<T>(
         find?: Record<string, any>,
-        options?: IDatabaseFindAllOptions,
+        options?: IDatabaseFindAllOptions
     ): Promise<T[]> {
         return this.postRepository.findAll<T>(find, options);
     }
 
     async findOneById(
         _id: string,
-        options?: IDatabaseFindOneOptions,
+        options?: IDatabaseFindOneOptions
     ): Promise<PostDoc> {
         return this.postRepository.findOneById<PostDoc>(_id, options);
     }
 
     async findOne(
         find: Record<string, any>,
-        options?: IDatabaseFindOneOptions,
+        options?: IDatabaseFindOneOptions
     ): Promise<PostGetDto> {
         const dataPost: any = (
             await this.postRepository.findOne<PostDoc>(find, options)
@@ -75,7 +75,12 @@ export class PostService implements IPostService {
         if (categoriesId.length) {
             for (const item of categoriesId) {
                 const subCategories =
-                    await this.categoryService.findCategoryTree({ _id: item });
+                    await this.categoryService.findCategoryTree(
+                        {
+                            _id: item,
+                        },
+                        'post'
+                    );
                 if (subCategories) {
                     categories.push(subCategories);
                 }
@@ -87,27 +92,27 @@ export class PostService implements IPostService {
 
     async findOneByName(
         name: string,
-        options?: IDatabaseFindOneOptions,
+        options?: IDatabaseFindOneOptions
     ): Promise<PostDoc> {
         return this.postRepository.findOne<PostDoc>({ name }, options);
     }
 
     async getTotal(
         find?: Record<string, any>,
-        options?: IDatabaseGetTotalOptions,
+        options?: IDatabaseGetTotalOptions
     ): Promise<number> {
         return this.postRepository.getTotal(find, options);
     }
 
     async existByTitle(
         titles: string[],
-        options?: IDatabaseExistOptions,
+        options?: IDatabaseExistOptions
     ): Promise<boolean> {
         return this.postRepository.exists(
             {
                 'translations.title': { $in: titles },
             },
-            { ...options, withDeleted: true },
+            { ...options, withDeleted: true }
         );
     }
 
@@ -120,11 +125,10 @@ export class PostService implements IPostService {
             author,
             categories,
         }: PostCreateDto,
-        options?: IDatabaseCreateOptions,
+        options?: IDatabaseCreateOptions
     ): Promise<PostDoc> {
-        const translationsId: any = await this.translationService.createMany(
-            translations,
-        );
+        const translationsId: any =
+            await this.translationService.createMany(translations);
         const create: PostEntity = new PostEntity();
         create.tags = tags;
         create.thumbnail = thumbnail;
@@ -138,10 +142,17 @@ export class PostService implements IPostService {
     async update(
         repository: PostDoc,
         postUpdate: PostUpdateDto,
-        options?: IDatabaseSaveOptions,
+        options?: IDatabaseSaveOptions
     ): Promise<PostDoc> {
-        const { author, tags, translations, photo, thumbnail, categories, claps } =
-            postUpdate;
+        const {
+            author,
+            tags,
+            translations,
+            photo,
+            thumbnail,
+            categories,
+            claps,
+        } = postUpdate;
         (repository.author = author),
             (repository.tags = tags),
             (repository.photo = photo),
@@ -155,7 +166,7 @@ export class PostService implements IPostService {
             if (translationDoc) {
                 await this.translationService.update(
                     translationDoc,
-                    translation,
+                    translation
                 );
             } else {
                 // const newTrans = await this.translationService.create(
@@ -169,21 +180,21 @@ export class PostService implements IPostService {
 
     async delete(
         repository: PostDoc,
-        options?: IDatabaseSaveOptions,
+        options?: IDatabaseSaveOptions
     ): Promise<PostDoc> {
         return this.postRepository.delete(repository, options);
     }
 
     async deleteMany(
         find: Record<string, any>,
-        options?: IDatabaseManyOptions,
+        options?: IDatabaseManyOptions
     ): Promise<boolean> {
         return this.postRepository.deleteMany(find, options);
     }
 
     async createMany(
         data: PostCreateDto[],
-        options?: IDatabaseCreateManyOptions,
+        options?: IDatabaseCreateManyOptions
     ): Promise<boolean> {
         const create: PostEntity[] = data.map(({ tags, thumbnail, photo }) => {
             const entity: PostEntity = new PostEntity();
@@ -225,14 +236,14 @@ export class PostService implements IPostService {
         const startOfMonth = new Date(
             currentDate.getFullYear(),
             currentDate.getMonth(),
-            1,
+            1
         );
 
         const findFofM = { createdAt: { $gte: startOfMonth } };
 
         const featuredOfMonth = await this.postRepository.findAll(
             findFofM,
-            queryPost,
+            queryPost
         );
 
         const findPopularPost = {
@@ -241,7 +252,7 @@ export class PostService implements IPostService {
 
         const popularPost = await this.postRepository.findAll(
             findPopularPost,
-            queryPost,
+            queryPost
         );
 
         const tags = (
@@ -265,8 +276,6 @@ export class PostService implements IPostService {
                 { $limit: 10 }, // Limit to top 10
             ])
         ).map((item: any) => item._id);
-
-        console.log('tags: ', tags);
 
         return {
             featuredOfMonth,

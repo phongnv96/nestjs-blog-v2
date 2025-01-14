@@ -25,4 +25,7 @@ export enum ENUM_POLICY_SUBJECT {
     USER = 'USER',
     POST = 'POST',
     COMMENT = 'COMMENT',
+    ORDER = 'ORDER',
+    PRODUCT = 'PRODUCT',
+    CATEGORY = 'CATEGORY',
 }

@@ -4,7 +4,7 @@ import { DatabaseMongoUUIDEntityAbstract } from 'src/common/database/abstracts/m
 import { DatabaseEntity } from 'src/common/database/decorators/database.decorator';
 import { IsString } from 'class-validator';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { CategoryEntity } from '../../../post/repository/entities/category.entity';
+import { CategoryEntity } from 'src/modules/category/respository/entities/category.entity';
 
 export const QuizDatabaseName = 'categories';
 

@@ -5,6 +5,8 @@ import { RoutesUserModule } from 'src/router/routes/routes.user.module';
 import { RoutesPublicModule } from 'src/router/routes/routes.public.module';
 import { AppController } from 'src/app/controllers/app.controller';
 import { RoutesAuthModule } from 'src/router/routes/routes.auth.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({})
 export class RouterModule {
@@ -18,6 +20,16 @@ export class RouterModule {
 
         if (process.env.HTTP_ENABLE === 'true') {
             imports.push(
+                ThrottlerModule.forRootAsync({
+                    imports: [ConfigModule],
+                    inject: [ConfigService],
+                    useFactory: (config: ConfigService) => [
+                        {
+                            ttl: config.get('app.throttle.ttl'),
+                            limit: config.get('app.throttle.limit'),
+                        },
+                    ],
+                }),
                 RoutesPublicModule,
                 RoutesUserModule,
                 RoutesAdminModule,

@@ -3,15 +3,14 @@ import { Document } from 'mongoose';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
 import { DatabaseMongoUUIDEntityAbstract } from 'src/common/database/abstracts/mongo/entities/database.mongo.uuid.entity.abstract';
 import { DatabaseEntity } from 'src/common/database/decorators/database.decorator';
+import { CategoryEntity } from 'src/modules/category/respository/entities/category.entity';
+import { TranslationEntity } from 'src/modules/translation/repository/entities/translation.entity';
 import { UserEntity } from 'src/modules/user/repository/entities/user.entity';
-import { TranslationEntity } from './translation.entity';
-import { CategoryEntity } from './category.entity';
 
 export const PostDatabaseName = 'posts';
 
 @DatabaseEntity({ collection: PostDatabaseName })
 export class PostEntity extends DatabaseMongoUUIDEntityAbstract {
-
     @Prop({ default: 0 })
     views: number;
 
@@ -27,11 +26,14 @@ export class PostEntity extends DatabaseMongoUUIDEntityAbstract {
 
     @Prop({
         required: false,
-        type: [{
-        author: String,
-        clap: Number,
-        }] })
-    claps: {
+        type: [
+            {
+                author: String,
+                clap: Number,
+            },
+        ],
+    })
+    claps?: {
         author: string;
         clap: number;
     }[];

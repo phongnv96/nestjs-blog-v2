@@ -19,13 +19,11 @@ import { ENUM_PAGINATION_ORDER_DIRECTION_TYPE } from '../../../common/pagination
 import { CommentCreateDoc, CommentListDoc } from '../docs/comment.docs';
 import { GetUser, UserProtected } from '../../user/decorators/user.decorator';
 import { UserDoc } from '../../user/repository/entities/user.entity';
-import {
-    AuthJwtAdminAccessProtected,
-    AuthJwtUserAccessProtected,
-} from '../../../common/auth/decorators/auth.jwt.decorator';
 import { CommentDoc } from '../repository/entities/comment.entity';
 import { CommentLikeDto } from '../dtos/comment.like.dto';
 import { ENUM_COMMENT_STATUS_CODE_ERROR } from '../constants/comment.status-code.constant';
+import { ENUM_COMMENT_REFERENCE_TYPE } from '../constants/comment.enum.constant';
+import { AuthJwtUserAccessProtected } from 'src/common/auth/decorators/auth.jwt.decorator';
 
 @ApiTags('modules.public.comment')
 @Controller({
@@ -46,7 +44,14 @@ export class CommentPublicController {
     async addComment(
         @GetUser() user: UserDoc,
         @Body()
-        { content, photo, thumbnail, parentId = null, post }: CommentCreateDto
+        {
+            content,
+            photo,
+            thumbnail,
+            parentId = null,
+            reference,
+            referenceType,
+        }: CommentCreateDto
     ): Promise<IResponse> {
         const data = await this.commentService.create({
             author: user._id,
@@ -54,7 +59,9 @@ export class CommentPublicController {
             photo,
             thumbnail,
             parentId,
-            post,
+            reference,
+            referenceType,
+            likes: [],
         });
 
         return {
@@ -83,7 +90,14 @@ export class CommentPublicController {
             });
         }
         comment.likes = likes;
-        const data = await this.commentService.update(commentId, comment);
+        const data = await this.commentService.update(commentId, {
+            content: comment.content,
+            photo: comment.photo,
+            thumbnail: comment.thumbnail,
+            likes: comment.likes,
+            reference: comment.reference,
+            referenceType: comment.referenceType,
+        });
 
         return {
             data: data._id,
@@ -122,6 +136,20 @@ export class CommentPublicController {
     @Get('/get/all-comments/post/:postId')
     async getAllCommentsByPost(@Param() { postId }: any): Promise<IResponse> {
         const data = await this.commentService.findAllCommentsByPostId(postId);
+        return {
+            data: data,
+        };
+    }
+
+    @Get('/get/comments/:referenceType/:referenceId')
+    async getAllCommentsByReference(
+        @Param('referenceType') referenceType: ENUM_COMMENT_REFERENCE_TYPE,
+        @Param('referenceId') referenceId: string
+    ): Promise<IResponse> {
+        const data = await this.commentService.findAllCommentsByReference(
+            referenceId,
+            referenceType
+        );
         return {
             data: data,
         };

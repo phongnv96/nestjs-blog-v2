@@ -1,14 +1,13 @@
 import { faker } from '@faker-js/faker';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsObject } from 'class-validator';
+import { IsArray, IsObject, IsOptional } from 'class-validator';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
-import { TranslationDoc } from '../repository/entities/translation.entity';
+import { TranslationDoc } from '../../translation/repository/entities/translation.entity';
 
 export class PostCreateDto {
-
     @ApiHideProperty()
-    readonly _id ?: string;
+    readonly _id?: string;
 
     @ApiProperty({
         description: 'author id',
@@ -26,13 +25,16 @@ export class PostCreateDto {
 
     @ApiProperty({
         description: 'claps of post',
-        example: faker.helpers.arrayElements([{
-            author: faker.string.uuid(),
-            clap: faker.number.int(),
-        }]),
+        example: faker.helpers.arrayElements([
+            {
+                author: faker.string.uuid(),
+                clap: faker.number.int(),
+            },
+        ]),
         required: false,
     })
     @IsArray()
+    @IsOptional()
     readonly claps?: {
         author: string;
         clap: number;

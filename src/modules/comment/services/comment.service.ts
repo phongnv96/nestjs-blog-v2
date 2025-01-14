@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Types } from 'mongoose';
 import {
     IDatabaseCreateOptions,
     IDatabaseExistOptions,
@@ -17,6 +18,7 @@ import {
 } from '../repository/entities/comment.entity';
 import { CommentCreateDto } from '../dtos/comment.create.dto';
 import { ENUM_PAGINATION_ORDER_DIRECTION_TYPE } from '../../../common/pagination/constants/pagination.enum.constant';
+import { ENUM_COMMENT_REFERENCE_TYPE } from '../constants/comment.enum.constant';
 
 @Injectable()
 export class CommentService implements ICommentService {
@@ -54,20 +56,42 @@ export class CommentService implements ICommentService {
         postId: string,
         options?: IDatabaseFindOneOptions
     ): Promise<CommentEntity[]> {
-        // Step 1: Fetch all comments for the post
+        // Update to use reference type
+        return this.findAllCommentsByReference(
+            postId,
+            ENUM_COMMENT_REFERENCE_TYPE.POST,
+            options
+        );
+    }
+
+    async findAllCommentsByReference(
+        referenceId: string,
+        referenceType: ENUM_COMMENT_REFERENCE_TYPE,
+        options?: IDatabaseFindOneOptions
+    ): Promise<CommentEntity[]> {
         const comments = await this.findAll(
-            { post: postId },
+            {
+                reference: referenceId,
+                referenceType,
+                // Add proper reference type filtering
+                $or: [{ referenceType }, { referenceType: { $exists: false } }],
+            },
             {
                 order: { left: ENUM_PAGINATION_ORDER_DIRECTION_TYPE.ASC },
                 join: [
                     {
                         path: 'author',
-                        select: ['firstName', 'lastName', 'photo'],
+                        select: ['firstName', 'lastName', 'photo', 'email'],
                         match: { blocked: false, isActive: true },
                     },
                     {
                         path: 'likes',
                         select: ['firstName', 'lastName', 'photo', '_id'],
+                        match: { isActive: true },
+                    },
+                    {
+                        path: 'reference',
+                        select: ['_id', 'title', 'slug', 'type'],
                     },
                 ],
                 ...options,
@@ -78,11 +102,17 @@ export class CommentService implements ICommentService {
             return [];
         }
 
-        // Step 2: Function to recursively nest comments
-        function nestComments(commentList: CommentEntity[], parentId = null) {
+        // Improved nesting logic with type checking
+        function nestComments(
+            commentList: CommentEntity[],
+            parentId = null
+        ): CommentEntity[] {
             return commentList
                 .filter(
-                    (comment) => comment.parentId === parentId && comment.author
+                    (comment) =>
+                        comment.parentId === parentId &&
+                        comment.author &&
+                        comment.referenceType === referenceType
                 )
                 .map((comment) => ({
                     ...comment,
@@ -90,7 +120,6 @@ export class CommentService implements ICommentService {
                 }));
         }
 
-        // Step 3: Start the nesting with top-level comments
         return nestComments(comments);
     }
 
@@ -128,53 +157,90 @@ export class CommentService implements ICommentService {
     }
 
     async create(
-        { author, content, photo, thumbnail, parentId, post }: CommentCreateDto,
+        {
+            author,
+            content,
+            photo,
+            thumbnail,
+            parentId,
+            reference,
+            referenceType,
+            likes = [],
+        }: CommentCreateDto,
         options?: IDatabaseCreateOptions
     ): Promise<CommentDoc> {
-        const parentComment = await this.commentRepository.findOneById(
-            parentId
-        );
-        const rightValue = parentComment
-            ? parentComment.right
+        // Validate parent comment
+        if (parentId) {
+            const parentComment =
+                await this.commentRepository.findOneById(parentId);
+            if (
+                !parentComment ||
+                parentComment.referenceType !== referenceType
+            ) {
+                throw new Error(
+                    'Invalid parent comment or reference type mismatch'
+                );
+            }
+        }
+
+        const rightValue = parentId
+            ? (await this.commentRepository.findOneById(parentId))?.right
             : await this.getMaxRightValue();
+
         const repository = await this.commentRepository.model();
-        // Update existing comments
+
+        // Update tree structure within same reference
         await repository.updateMany(
-            { right: { $gte: rightValue } },
+            {
+                right: { $gte: rightValue },
+                referenceType,
+                reference,
+            },
             { $inc: { right: 2 } }
         );
+
         await repository.updateMany(
-            { left: { $gt: rightValue } },
+            {
+                left: { $gt: rightValue },
+                referenceType,
+                reference,
+            },
             { $inc: { left: 2 } }
         );
 
-        // Create new comment
         const create = new CommentEntity();
         create.author = author;
         create.content = content;
         create.photo = photo;
         create.thumbnail = thumbnail;
-        create.parentId = parentId;
-        create.post = post;
+        create.reference = new Types.ObjectId(reference);
+        create.referenceType = referenceType;
         create.left = rightValue;
         create.right = rightValue + 1;
-        return this.commentRepository.create(create);
+        create.likes = likes;
+
+        return this.commentRepository.create(create, options);
     }
 
     async update(
         id: string,
-        { content, photo, thumbnail, parentId, post, likes }: CommentDoc,
+        { content, photo, thumbnail, likes, reference, referenceType },
         options?: IDatabaseSaveOptions
     ): Promise<CommentDoc> {
-        const commentUpdate = await this.commentRepository.findOneById(id);
-        commentUpdate.content = content;
-        commentUpdate.photo = photo;
-        commentUpdate.thumbnail = thumbnail;
-        commentUpdate.parentId = parentId;
-        commentUpdate.post = post;
-        commentUpdate.likes = likes;
+        const comment = await this.commentRepository.findOneById(id);
+        if (!comment) {
+            throw new Error('Comment not found');
+        }
 
-        return this.commentRepository.save(commentUpdate, options);
+        // Update only allowed fields
+        if (content) comment.content = content;
+        if (photo) comment.photo = photo;
+        if (thumbnail) comment.thumbnail = thumbnail;
+        if (likes) comment.likes = likes;
+        if (reference) comment.reference = reference;
+        if (referenceType) comment.referenceType = referenceType;
+
+        return this.commentRepository.save(comment, options);
     }
 
     async delete(
@@ -222,13 +288,12 @@ export class CommentService implements ICommentService {
         options?: IDatabaseCreateManyOptions
     ): Promise<any> {
         const create: CommentEntity[] = data.map(
-            ({ content, photo, thumbnail, parentId, post }) => {
+            ({ content, photo, thumbnail, parentId }) => {
                 const entity: CommentEntity = new CommentEntity();
                 entity.photo = photo;
                 entity.content = content;
                 entity.thumbnail = thumbnail;
                 entity.parentId = parentId;
-                entity.post = post;
                 return entity;
             }
         );
