@@ -18,4 +18,5 @@ export class RoleRepository extends DatabaseMongoUUIDRepositoryAbstract<
     ) {
         super(roleModel);
     }
+    getModel = () => this.roleModel;
 }

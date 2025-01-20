@@ -49,7 +49,7 @@ export class QuestionEntity extends DatabaseMongoUUIDEntityAbstract {
         index: true,
         required: false,
     })
-    quizId: string;
+    quizId: string[];
 
     @Prop({
         required: false,

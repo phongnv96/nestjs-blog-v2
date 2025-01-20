@@ -14,8 +14,9 @@ export class TranslationRepository extends DatabaseMongoUUIDRepositoryAbstract<
 > {
     constructor(
         @DatabaseModel(TranslationEntity.name)
-        private readonly TranslationModel: Model<TranslationEntity>
+        private readonly translationModel: Model<TranslationEntity>
     ) {
-        super(TranslationModel);
+        super(translationModel);
     }
+    getModel = () => this.translationModel
 }

@@ -30,4 +30,6 @@ export class ProductRepository extends DatabaseMongoUUIDRepositoryAbstract<
             )
             .exec();
     }
+
+    getModel = () => this.productModel;
 }

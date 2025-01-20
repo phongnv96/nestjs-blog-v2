@@ -1,5 +1,5 @@
 import { Prop, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, model } from 'mongoose';
 import { DatabaseMongoUUIDEntityAbstract } from 'src/common/database/abstracts/mongo/entities/database.mongo.uuid.entity.abstract';
 import { DatabaseEntity } from 'src/common/database/decorators/database.decorator';
 import { IsString, IsEnum } from 'class-validator';
@@ -84,3 +84,5 @@ export class CategoryEntity extends DatabaseMongoUUIDEntityAbstract {
 export const CategorySchema = SchemaFactory.createForClass(CategoryEntity);
 
 export type CategoryDoc = CategoryEntity & Document;
+
+export const CategoryModel = model('categories', CategorySchema);

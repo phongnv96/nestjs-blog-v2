@@ -5,61 +5,21 @@ import {
 } from '@nestjs/common';
 import { CategoryCreateDto } from '../dtos/category.create.dto';
 import { HelperStringService } from 'src/common/helper/services/helper.string.service';
-import {
-    IDatabaseCreateManyOptions,
-    IDatabaseFindAllOptions,
-    IDatabaseFindOneOptions,
-    IDatabaseManyOptions,
-    IDatabaseSaveOptions,
-} from 'src/common/database/interfaces/database.interface';
+import { IDatabaseFindAllOptions } from 'src/common/database/interfaces/database.interface';
 import { CategoryRepository } from '../respository/category.repository';
-import {
-    CategoryDoc,
-    CategoryEntity,
-    CategoryType,
-} from '../respository/entities/category.entity';
+import { CategoryDoc } from '../respository/entities/category.entity';
 import { ENUM_CATEGORY_STATUS_CODE_ERROR } from '../constants/category.constants';
 import { PostRepository } from 'src/modules/post/repository/repositories/post.repository';
 import { ProductRepository } from 'src/modules/product/repository/product.repository';
-import { ICategoryService } from '../interfaces/category.service.interface';
-import { ClientSession } from 'mongoose';
 
 @Injectable()
-export class CategoryService implements ICategoryService {
+export class CategoryService {
     constructor(
         private readonly categoryRepository: CategoryRepository,
         private readonly helperStringService: HelperStringService,
         private readonly postRepository: PostRepository,
         private readonly productRepository: ProductRepository
     ) {}
-
-    async findOne(
-        find: Record<string, any>,
-        options?: IDatabaseFindOneOptions
-    ): Promise<CategoryDoc> {
-        return this.categoryRepository.findOne<CategoryDoc>(find, options);
-    }
-
-    async findOneByName(
-        name: string,
-        options?: IDatabaseFindOneOptions
-    ): Promise<CategoryDoc> {
-        return this.categoryRepository.findOne<CategoryDoc>({ name }, options);
-    }
-
-    async update(
-        id: string,
-        { description, title, parentId, photo }: CategoryCreateDto,
-        options?: IDatabaseSaveOptions
-    ): Promise<CategoryDoc> {
-        const CategoryUpdate = await this.categoryRepository.findOneById(id);
-        CategoryUpdate.description = description;
-        CategoryUpdate.title = title;
-        CategoryUpdate.parentId = parentId;
-        CategoryUpdate.photo = photo;
-
-        return this.categoryRepository.save(CategoryUpdate, options);
-    }
 
     // Fetch category tree with post or product counts
     async getCategoryTreeWithCounts(type: 'post' | 'product'): Promise<any> {
@@ -203,27 +163,6 @@ export class CategoryService implements ICategoryService {
         return this.categoryRepository.create(categoryData);
     }
 
-    async createMany(
-        data: CategoryCreateDto[],
-        options?: IDatabaseCreateManyOptions
-    ): Promise<any> {
-        const create: CategoryEntity[] = data.map(
-            ({ title, description, parentId, photo, type }) => {
-                const entity: CategoryEntity = new CategoryEntity();
-                entity.title = title;
-                entity.parentId = parentId;
-                entity.description = description;
-                entity.photo = photo;
-                entity.type = type as CategoryType;
-                return entity;
-            }
-        );
-        return this.categoryRepository.createMany<CategoryEntity>(
-            create,
-            options
-        );
-    }
-
     // Find a category by ID
     async findOneById(categoryId: string): Promise<CategoryDoc> {
         const category = await this.categoryRepository.findOneById(categoryId);
@@ -247,32 +186,15 @@ export class CategoryService implements ICategoryService {
 
     // Update multiple categories based on a filter
     async updateMany(
-        find: Record<string, any>,
-        data: any,
-        options?: IDatabaseManyOptions<ClientSession>
-    ): Promise<boolean> {
-        try {
-            await this.categoryRepository.updateMany(find, data, options);
-            return true;
-        } catch (error) {
-            return false;
-        }
+        filter: Record<string, any>,
+        updatePipeline: Record<string, any>
+    ): Promise<void> {
+        await this.categoryRepository.updateMany(filter, updatePipeline);
     }
 
     // Delete a specific category
-    async delete(
-        repository: CategoryDoc,
-        options?: IDatabaseSaveOptions
-    ): Promise<CategoryDoc> {
-        await this.categoryRepository.delete(repository, options);
-        return repository;
-    }
-
-    async deleteMany(
-        find: Record<string, any>,
-        options?: IDatabaseManyOptions
-    ): Promise<boolean> {
-        return this.categoryRepository.deleteMany(find, options);
+    async delete(category: CategoryDoc): Promise<void> {
+        await this.categoryRepository.delete(category);
     }
 
     // Delete a category and handle nested paths
@@ -310,7 +232,7 @@ export class CategoryService implements ICategoryService {
         }
 
         // Finally, delete the current category
-        await this.delete(category._id);
+        await this.delete(category);
     }
 
     async findAllChildren(categoryId: string) {
@@ -319,9 +241,5 @@ export class CategoryService implements ICategoryService {
         });
 
         return categories;
-    }
-
-    async getTotal(filter: Record<string, any> = {}): Promise<number> {
-        return this.categoryRepository.getTotal(filter);
     }
 }

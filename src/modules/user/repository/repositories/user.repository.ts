@@ -24,4 +24,5 @@ export class UserRepository extends DatabaseMongoUUIDRepositoryAbstract<
             model: RoleEntity.name,
         });
     }
+    getModel = () => this.userModel
 }

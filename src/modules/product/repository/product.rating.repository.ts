@@ -34,4 +34,6 @@ export class ProductRatingRepository extends DatabaseMongoUUIDRepositoryAbstract
             ratings.length
         );
     }
+
+    getModel = () => this.productRatingModel;
 }

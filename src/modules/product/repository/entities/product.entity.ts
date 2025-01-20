@@ -1,14 +1,16 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Types, Document } from 'mongoose';
 import { DatabaseMongoUUIDEntityAbstract } from 'src/common/database/abstracts/mongo/entities/database.mongo.uuid.entity.abstract';
 import { AwsS3Serialization } from 'src/common/aws/serializations/aws.s3.serialization';
 import { TranslationEntity } from '../../../translation/repository/entities/translation.entity';
 import { CategoryEntity } from 'src/modules/category/respository/entities/category.entity';
 import { UserEntity } from 'src/modules/user/repository/entities/user.entity';
+import { DatabaseEntity } from 'src/common/database/decorators/database.decorator';
+import { ProductRatingEntity } from './product-rating.entity';
 
-export type ProductDoc = ProductEntity & Document;
+export const ProductDatabaseName = 'products';
 
-@Schema({ collection: 'products', timestamps: true, versionKey: false })
+@DatabaseEntity({ collection: ProductDatabaseName })
 export class ProductEntity extends DatabaseMongoUUIDEntityAbstract {
     @Prop({
         required: true,
@@ -82,20 +84,14 @@ export class ProductEntity extends DatabaseMongoUUIDEntityAbstract {
     version: string;
 
     @Prop({
-        type: Map,
-        of: String,
-    })
-    metadata: Map<string, string>;
-
-    @Prop({
         type: [
             {
-                type: String,
-                ref: 'ProductRating',
+                type: Types.ObjectId,
+                ref: ProductRatingEntity.name,
             },
         ],
     })
-    ratings: string[];
+    ratings: Types.ObjectId[];
 
     @Prop({
         type: Number,
@@ -124,4 +120,5 @@ export class ProductEntity extends DatabaseMongoUUIDEntityAbstract {
 }
 
 export const ProductSchema = SchemaFactory.createForClass(ProductEntity);
-export const ProductDatabaseName = 'products';
+
+export type ProductDoc = ProductEntity & Document;

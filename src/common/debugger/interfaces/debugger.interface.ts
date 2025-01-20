@@ -1,5 +1,5 @@
-import { RotatingFileStream } from 'rotating-file-stream';
 import { Response } from 'express';
+import DailyRotateFile from 'winston-daily-rotate-file';
 
 export interface IDebuggerLog {
     description: string;
@@ -9,7 +9,7 @@ export interface IDebuggerLog {
 }
 
 export interface IDebuggerHttpConfigOptions {
-    readonly stream: RotatingFileStream;
+    readonly stream: DailyRotateFile;
 }
 
 export interface IDebuggerHttpConfig {

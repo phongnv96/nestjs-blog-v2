@@ -18,4 +18,5 @@ export class PostRepository extends DatabaseMongoUUIDRepositoryAbstract<
             {path: 'author'}
         ]);
     }
+    getModel = () => this.postModel
 }

@@ -53,7 +53,7 @@ import {
     _Object,
     ObjectCannedACL,
 } from '@aws-sdk/client-s3';
-
+import { componentLoader } from 'src/common/helper/services/helper.component-loader.js';
 @Injectable()
 export class AwsS3Service implements IAwsS3Service {
     private readonly s3Client: S3Client;
@@ -421,5 +421,42 @@ export class AwsS3Service implements IAwsS3Service {
         } catch (err: any) {
             throw err;
         }
+    }
+
+    async createUploadFeature({
+        keyField,
+        fileField,
+        mimeTypeField,
+        basePath = '',
+    }: {
+        keyField: string;
+        fileField: string;
+        mimeTypeField: string;
+        basePath?: string;
+    }) {
+        const { default: uploadFeature } = await import('@adminjs/upload');
+        return uploadFeature({
+            provider: {
+                aws: {
+                    bucket: this.bucket,
+                    region: this.configService.get<string>('aws.s3.region'),
+                    accessKeyId:
+                        this.configService.get<string>('aws.credential.key'),
+                    secretAccessKey: this.configService.get<string>(
+                        'aws.credential.secret'
+                    ),
+                },
+            },
+            properties: {
+                key: keyField,
+                file: fileField,
+                mimeType: mimeTypeField,
+            },
+            uploadPath: (record, filename) => {
+                const id = record?.id || 'unknown';
+                return `${basePath ? `${basePath}/` : ''}${id}/${filename}`;
+            },
+            componentLoader,
+        });
     }
 }

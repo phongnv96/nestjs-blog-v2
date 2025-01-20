@@ -5,6 +5,16 @@ import { RouterModule } from 'src/router/router.module';
 import { Module } from '@nestjs/common';
 
 import { AppController } from './controllers/app.controller';
+import { AdminModule } from 'src/modules/admin/admin.module';
+
+import('adminjs').then(({ AdminJS }) => {
+    import('@adminjs/mongoose').then((mongooseAdapter) => {
+        AdminJS.registerAdapter({
+            Resource: mongooseAdapter.Resource,
+            Database: mongooseAdapter.Database,
+        });
+    });
+});
 
 @Module({
     controllers: [AppController],
@@ -17,6 +27,8 @@ import { AppController } from './controllers/app.controller';
 
         // Routes
         RouterModule.forRoot(),
+
+        AdminModule,
     ],
 })
 export class AppModule {}

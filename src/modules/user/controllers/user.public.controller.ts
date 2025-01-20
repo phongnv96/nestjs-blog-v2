@@ -7,12 +7,13 @@ import {
     HttpCode,
     HttpStatus,
     InternalServerErrorException,
-    NotFoundException, Param,
+    NotFoundException,
+    Param,
     Post,
     Res,
 } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
-import { ClientSession, Connection } from 'mongoose';
+import { Connection } from 'mongoose';
 import { ApiKeyPublicProtected } from 'src/common/api-key/decorators/api-key.decorator';
 import {
     ENUM_AUTH_LOGIN_FROM,
@@ -30,7 +31,10 @@ import { ENUM_ROLE_STATUS_CODE_ERROR } from 'src/modules/role/constants/role.sta
 import { RoleService } from 'src/modules/role/services/role.service';
 import { ENUM_USER_SIGN_UP_FROM } from 'src/modules/user/constants/user.enum.constant';
 import { ENUM_USER_STATUS_CODE_ERROR } from 'src/modules/user/constants/user.status-code.constant';
-import { UserPublicSignUpDoc, UserPublicVerifyToken } from 'src/modules/user/docs/user.public.doc';
+import {
+    UserPublicSignUpDoc,
+    UserPublicVerifyToken,
+} from 'src/modules/user/docs/user.public.doc';
 import { UserSignUpDto } from 'src/modules/user/dtos/user.sign-up.dto';
 import { UserService } from 'src/modules/user/services/user.service';
 import { IUserDoc } from '../interfaces/user.interface';
@@ -39,16 +43,12 @@ import { UserPayloadSerialization } from '../serializations/user.payload.seriali
 import { AuthGoogleOAuth2LoginProtected } from 'src/common/auth/decorators/auth.google.decorator';
 import { DatabaseConnection } from 'src/common/database/decorators/database.decorator';
 import { Response as ExResponse } from 'express';
-import {
-    AuthFacebookOAuth2LoginProtected,
-} from '../../../common/auth/decorators/auth.facebook.decorator';
+import { AuthFacebookOAuth2LoginProtected } from '../../../common/auth/decorators/auth.facebook.decorator';
 import { AuthGithubOAuth2SignUpProtected } from '../../../common/auth/decorators/auth.github.decorator';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../../../common/mail/services/mail.service';
 import { AuthAccessPayloadSerialization } from '../../../common/auth/serializations/auth.access-payload.serialization';
-import {
-    AuthRefreshPayloadSerialization,
-} from '../../../common/auth/serializations/auth.refresh-payload.serialization';
+import { AuthRefreshPayloadSerialization } from '../../../common/auth/serializations/auth.refresh-payload.serialization';
 
 @ApiTags('modules.public.user')
 @Controller({
@@ -62,9 +62,8 @@ export class UserPublicController {
         private readonly roleService: RoleService,
         private readonly configService: ConfigService,
         private readonly mailService: MailService,
-        @DatabaseConnection() private readonly databaseConnection: Connection,
-    ) {
-    }
+        @DatabaseConnection() private readonly databaseConnection: Connection
+    ) {}
 
     @UserPublicSignUpDoc()
     @Response('user.signUp')
@@ -72,7 +71,7 @@ export class UserPublicController {
     @Post('/sign-up')
     async signUp(
         @Body()
-            { email, mobileNumber, ...body }: UserSignUpDto,
+        { email, mobileNumber, ...body }: UserSignUpDto
     ): Promise<void> {
         const promises: Promise<any>[] = [
             this.roleService.findOneByName('user'),
@@ -83,9 +82,8 @@ export class UserPublicController {
             promises.push(this.userService.existByMobileNumber(mobileNumber));
         }
 
-        const [role, emailExist, mobileNumberExist] = await Promise.all(
-            promises,
-        );
+        const [role, emailExist, mobileNumberExist] =
+            await Promise.all(promises);
 
         if (emailExist) {
             throw new ConflictException({
@@ -95,7 +93,7 @@ export class UserPublicController {
         } else if (mobileNumberExist) {
             throw new ConflictException({
                 statusCode:
-                ENUM_USER_STATUS_CODE_ERROR.USER_MOBILE_NUMBER_EXIST_ERROR,
+                    ENUM_USER_STATUS_CODE_ERROR.USER_MOBILE_NUMBER_EXIST_ERROR,
                 message: 'user.error.mobileNumberExist',
             });
         }
@@ -111,7 +109,7 @@ export class UserPublicController {
                 isWaitingConfirmActivation: true,
                 ...body,
             },
-            password,
+            password
         );
 
         const loginDate: Date = await this.authService.getLoginDate();
@@ -122,7 +120,8 @@ export class UserPublicController {
                 loginFrom: ENUM_AUTH_LOGIN_FROM.EMAIL,
             });
 
-        const token = await this.authService.createAccessToken(payloadAccessToken);
+        const token =
+            await this.authService.createAccessToken(payloadAccessToken);
 
         await this.mailService.sendUserConfirmation(user, token);
 
@@ -134,7 +133,8 @@ export class UserPublicController {
     @ApiKeyPublicProtected()
     async verifyToken(@Param('token') token: string) {
         const verifyToken = await this.authService.validateAccessToken(token);
-        const payloadVerifyToken = await this.authService.payloadAccessToken(token);
+        const payloadVerifyToken =
+            await this.authService.payloadAccessToken(token);
         if (!verifyToken || !payloadVerifyToken) {
             throw new NotFoundException({
                 statusCode: ENUM_USER_STATUS_CODE_ERROR.TOKEN_INVALID_ERROR,
@@ -142,7 +142,9 @@ export class UserPublicController {
             });
         }
 
-        const user: UserDoc = await this.userService.findOneByEmail(payloadVerifyToken?.data?.user?.email);
+        const user: UserDoc = await this.userService.findOneByEmail(
+            payloadVerifyToken?.data?.user?.email
+        );
         if (!user) {
             throw new NotFoundException({
                 statusCode: ENUM_USER_STATUS_CODE_ERROR.USER_NOT_FOUND_ERROR,
@@ -152,16 +154,16 @@ export class UserPublicController {
 
         if (!user.isWaitingConfirmActivation) {
             throw new ForbiddenException({
-                statusCode: ENUM_USER_STATUS_CODE_ERROR.USER_ALREADY_ACTIVATED_ERROR,
+                statusCode:
+                    ENUM_USER_STATUS_CODE_ERROR.USER_ALREADY_ACTIVATED_ERROR,
                 message: 'user.error.alreadyActivated',
             });
         }
 
         await this.userService.updateVerifyToken(user);
 
-        const userWithRole: IUserDoc = await this.userService.joinWithRole(
-            user,
-        );
+        const userWithRole: IUserDoc =
+            await this.userService.joinWithRole(user);
 
         if (!userWithRole.role.isActive) {
             throw new ForbiddenException({
@@ -185,7 +187,7 @@ export class UserPublicController {
         const payloadRefreshToken: AuthRefreshPayloadSerialization =
             await this.authService.createPayloadRefreshToken(
                 payload._id,
-                payloadAccessToken,
+                payloadAccessToken
             );
 
         const payloadEncryption = await this.authService.getPayloadEncryption();
@@ -204,10 +206,10 @@ export class UserPublicController {
 
         const roleType = userWithRole.role.type;
         const accessToken: string = await this.authService.createAccessToken(
-            payloadHashedAccessToken,
+            payloadHashedAccessToken
         );
         const refreshToken: string = await this.authService.createRefreshToken(
-            payloadHashedRefreshToken,
+            payloadHashedRefreshToken
         );
 
         const checkPasswordExpired: boolean =
@@ -216,7 +218,7 @@ export class UserPublicController {
         if (checkPasswordExpired) {
             throw new ForbiddenException({
                 statusCode:
-                ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_EXPIRED_ERROR,
+                    ENUM_USER_STATUS_CODE_ERROR.USER_PASSWORD_EXPIRED_ERROR,
                 message: 'user.error.passwordExpired',
             });
         }
@@ -231,7 +233,6 @@ export class UserPublicController {
         };
     }
 
-
     @Response('user.loginGoogle')
     @AuthGoogleOAuth2LoginProtected()
     @Get('/login/google')
@@ -244,15 +245,15 @@ export class UserPublicController {
     @Get('/login/google/callback')
     async loginGoogleCallback(
         @AuthJwtPayload()
-            {
-                email,
-                firstName,
-                lastName,
-                accessToken: googleAccessToken,
-                refreshToken: googleRefreshToken,
-                photo,
-            }: IAuthGooglePayload,
-        @Res() res: ExResponse,
+        {
+            email,
+            firstName,
+            lastName,
+            accessToken: googleAccessToken,
+            refreshToken: googleRefreshToken,
+            photo,
+        }: IAuthGooglePayload,
+        @Res() res: ExResponse
     ): Promise<any> {
         const promises: Promise<any>[] = [
             this.roleService.findOneByName('user'),
@@ -265,9 +266,8 @@ export class UserPublicController {
             try {
                 const passwordString =
                     await this.authService.createPasswordRandom();
-                const password = await this.authService.createPassword(
-                    passwordString,
-                );
+                const password =
+                    await this.authService.createPassword(passwordString);
 
                 const user: UserDoc = await this.userService.create(
                     {
@@ -279,7 +279,7 @@ export class UserPublicController {
                         role: role._id,
                         signUpFrom: ENUM_USER_SIGN_UP_FROM.GOOGLE,
                     },
-                    password,
+                    password
                     // { session }
                 );
 
@@ -288,7 +288,7 @@ export class UserPublicController {
                     {
                         accessToken: googleAccessToken,
                         refreshToken: googleRefreshToken,
-                    },
+                    }
                     // { session }
                 );
 
@@ -325,7 +325,7 @@ export class UserPublicController {
                 loginWith: ENUM_AUTH_LOGIN_WITH.GOOGLE,
                 loginFrom: ENUM_AUTH_LOGIN_FROM.GOOGLE,
                 loginDate: loginDate,
-            },
+            }
         );
 
         // set token to cookie redirect to client
@@ -354,15 +354,14 @@ export class UserPublicController {
     @Get('/login/facebook/callback')
     async loginFacebookCallback(
         @AuthJwtPayload()
-            {
-                email,
-                firstName,
-                lastName,
-                accessToken,
-                refreshToken,
-                photo: AwsS3Serialization,
-            }: IAuthGooglePayload,
-        @Res() res: ExResponse,
+        {
+            email,
+            firstName,
+            lastName,
+            accessToken,
+            refreshToken,
+        }: IAuthGooglePayload,
+        @Res() res: ExResponse
     ): Promise<void> {
         // sign up
 
@@ -381,9 +380,8 @@ export class UserPublicController {
             try {
                 const passwordString =
                     await this.authService.createPasswordRandom();
-                const password = await this.authService.createPassword(
-                    passwordString,
-                );
+                const password =
+                    await this.authService.createPassword(passwordString);
 
                 user = await this.userService.create(
                     {
@@ -394,7 +392,7 @@ export class UserPublicController {
                         role: role._id,
                         signUpFrom: ENUM_USER_SIGN_UP_FROM.GOOGLE,
                     },
-                    password,
+                    password
                     // { session }
                 );
 
@@ -403,19 +401,19 @@ export class UserPublicController {
                     {
                         accessToken,
                         refreshToken,
-                    },
+                    }
                     // { session }
                 );
 
                 // await session.commitTransaction();
                 // await session.endSession();
 
-                const userWithRole: IUserDoc = await this.userService.joinWithRole(
-                    user,
-                );
+                const userWithRole: IUserDoc =
+                    await this.userService.joinWithRole(user);
                 if (!userWithRole.role.isActive) {
                     throw new ForbiddenException({
-                        statusCode: ENUM_ROLE_STATUS_CODE_ERROR.ROLE_INACTIVE_ERROR,
+                        statusCode:
+                            ENUM_ROLE_STATUS_CODE_ERROR.ROLE_INACTIVE_ERROR,
                         message: 'role.error.inactive',
                     });
                 }
@@ -424,7 +422,6 @@ export class UserPublicController {
                     accessToken,
                     refreshToken,
                 });
-
             } catch (err: any) {
                 // await session.abortTransaction();
                 // await session.endSession();
@@ -441,9 +438,8 @@ export class UserPublicController {
         user = await this.userService.findOneByEmail(email);
         // }
 
-        const userWithRole: IUserDoc = await this.userService.joinWithRole(
-            user,
-        );
+        const userWithRole: IUserDoc =
+            await this.userService.joinWithRole(user);
 
         if (!userWithRole.role.isActive) {
             throw new ForbiddenException({
@@ -467,19 +463,16 @@ export class UserPublicController {
                 loginWith: ENUM_AUTH_LOGIN_WITH.FACEBOOK,
                 loginFrom: ENUM_AUTH_LOGIN_FROM.FACEBOOK,
                 loginDate: loginDate,
-            },
+            }
         );
 
         res.cookie('token', JSON.stringify({ data: token }), {
             path: '/',
-            maxAge: this.configService.get(
-                'auth.refreshToken.expirationTime',
-            ),
+            maxAge: this.configService.get('auth.refreshToken.expirationTime'),
         });
         res.redirect(this.configService.get('client.domain'));
 
         return;
-
     }
 
     @ApiExcludeEndpoint()
@@ -497,15 +490,15 @@ export class UserPublicController {
     @Get('/login/github/callback')
     async signUpGithubCallback(
         @AuthJwtPayload()
-            {
-                email,
-                firstName,
-                lastName,
-                photo,
-                accessToken: githubAccessToken,
-                refreshToken: githubRefreshToken,
-            }: IAuthGithubPayload,
-        @Res() res: ExResponse,
+        {
+            email,
+            firstName,
+            lastName,
+            photo,
+            accessToken: githubAccessToken,
+            refreshToken: githubRefreshToken,
+        }: IAuthGithubPayload,
+        @Res() res: ExResponse
     ): Promise<void> {
         // sign up
 
@@ -525,9 +518,8 @@ export class UserPublicController {
             if (!emailExist) {
                 const passwordString =
                     await this.authService.createPasswordRandom();
-                const password = await this.authService.createPassword(
-                    passwordString,
-                );
+                const password =
+                    await this.authService.createPassword(passwordString);
 
                 user = await this.userService.create(
                     {
@@ -539,7 +531,7 @@ export class UserPublicController {
                         role: role._id,
                         signUpFrom: ENUM_USER_SIGN_UP_FROM.GITHUB,
                     },
-                    password,
+                    password
                     // { session }
                 );
 
@@ -548,7 +540,7 @@ export class UserPublicController {
                     {
                         accessToken: githubAccessToken,
                         refreshToken: githubRefreshToken,
-                    },
+                    }
                     // { session }
                 );
             }
@@ -559,9 +551,8 @@ export class UserPublicController {
             user = await this.userService.findOneByEmail(email);
             // }
 
-            const userWithRole: IUserDoc = await this.userService.joinWithRole(
-                user,
-            );
+            const userWithRole: IUserDoc =
+                await this.userService.joinWithRole(user);
 
             if (!userWithRole.role.isActive) {
                 throw new ForbiddenException({
@@ -585,13 +576,13 @@ export class UserPublicController {
                     loginWith: ENUM_AUTH_LOGIN_WITH.GITHUB,
                     loginFrom: ENUM_AUTH_LOGIN_FROM.GITHUB,
                     loginDate: loginDate,
-                },
+                }
             );
 
             res.cookie('token', JSON.stringify({ data: token }), {
                 path: '/',
                 maxAge: this.configService.get(
-                    'auth.refreshToken.expirationTime',
+                    'auth.refreshToken.expirationTime'
                 ),
             });
             res.redirect(this.configService.get('client.domain'));

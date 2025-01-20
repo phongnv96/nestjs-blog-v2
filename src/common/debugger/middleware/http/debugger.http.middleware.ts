@@ -1,7 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import morgan from 'morgan';
 import { Request, Response, NextFunction } from 'express';
-import { createStream } from 'rotating-file-stream';
 import { ConfigService } from '@nestjs/config';
 import { HelperDateService } from 'src/common/helper/services/helper.date.service';
 import {
@@ -13,6 +12,7 @@ import {
     DEBUGGER_HTTP_FORMAT,
     DEBUGGER_HTTP_NAME,
 } from 'src/common/debugger/constants/debugger.constant';
+import DailyRotateFile from 'winston-daily-rotate-file';
 
 @Injectable()
 export class DebuggerHttpMiddleware implements NestMiddleware {
@@ -79,12 +79,12 @@ export class DebuggerHttpWriteIntoFileMiddleware implements NestMiddleware {
         );
 
         const debuggerHttpOptions: IDebuggerHttpConfigOptions = {
-            stream: createStream(`${date}.log`, {
-                path: `./logs/${DEBUGGER_HTTP_NAME}/`,
+            stream: new DailyRotateFile({
+                filename: `${date}.log`,
+                dirname: `./logs/${DEBUGGER_HTTP_NAME}/`,
                 maxSize: this.maxSize,
                 maxFiles: this.maxFiles,
-                compress: true,
-                interval: '1d',
+                zippedArchive: true,
             }),
         };
 

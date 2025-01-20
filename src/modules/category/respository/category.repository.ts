@@ -16,5 +16,7 @@ export class CategoryRepository extends DatabaseMongoUUIDRepositoryAbstract<
         super(categoryModel);
     }
 
+    getModel = (): Model<CategoryEntity> => this.categoryModel;
+
     // Additional methods for custom queries if needed
 }
